@@ -1,0 +1,202 @@
+{% extends "base/layout.html" %}
+
+{% block title %}My Reports - Fact Checker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-flag"></i> My Reports</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                        <li class="breadcrumb-item active">My Reports</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="mb-0">Filter by Status</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('report.my_reports') }}" 
+                                   class="btn btn-sm {{ 'btn-primary' if not current_status else 'btn-outline-primary' }}">
+                                    All
+                                </a>
+                                <a href="{{ url_for('report.my_reports', status='pending') }}" 
+                                   class="btn btn-sm {{ 'btn-primary' if current_status == 'pending' else 'btn-outline-primary' }}">
+                                    Pending
+                                </a>
+                                <a href="{{ url_for('report.my_reports', status='resolved') }}" 
+                                   class="btn btn-sm {{ 'btn-primary' if current_status == 'resolved' else 'btn-outline-primary' }}">
+                                    Resolved
+                                </a>
+                                <a href="{{ url_for('report.my_reports', status='dismissed') }}" 
+                                   class="btn btn-sm {{ 'btn-primary' if current_status == 'dismissed' else 'btn-outline-primary' }}">
+                                    Dismissed
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports List -->
+            {% if reports_data.reports %}
+                {% for report_item in reports_data.reports %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3">
+                                        {% if report_item.report.reported_content_type == 'fact' %}
+                                            <i class="bi bi-file-text text-primary" style="font-size: 1.5rem;"></i>
+                                        {% else %}
+                                            <i class="bi bi-chat text-info" style="font-size: 1.5rem;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            {{ report_item.category.name }} Report
+                                            <span class="badge bg-{{ 'warning' if report_item.report.status == 'pending' else 'success' if report_item.report.status == 'resolved' else 'secondary' }}">
+                                                {{ report_item.report.status.title() }}
+                                            </span>
+                                        </h6>
+                                        <p class="text-muted mb-2">
+                                            <strong>Content:</strong> {{ report_item.content_preview }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Reason:</strong> {{ report_item.report.reason }}
+                                        </p>
+                                        {% if report_item.report.resolution_notes %}
+                                        <div class="alert alert-info alert-sm">
+                                            <strong>Resolution Notes:</strong> {{ report_item.report.resolution_notes }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="mb-2">
+                                    <span class="badge bg-{{ 'danger' if report_item.report.priority == 'urgent' else 'warning' if report_item.report.priority == 'high' else 'info' if report_item.report.priority == 'medium' else 'secondary' }}">
+                                        {{ report_item.report.priority.title() }} Priority
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i>
+                                    Submitted {{ report_item.report.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </small>
+                                {% if report_item.report.resolved_at %}
+                                <br>
+                                <small class="text-muted">
+                                    <i class="bi bi-check-circle"></i>
+                                    Resolved {{ report_item.report.resolved_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if reports_data.pagination.pages > 1 %}
+                <nav aria-label="Reports pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if reports_data.pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('report.my_reports', page=reports_data.pagination.page-1, status=current_status) }}">
+                                Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in range(1, reports_data.pagination.pages + 1) %}
+                            {% if page_num == reports_data.pagination.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% elif page_num <= reports_data.pagination.page + 2 and page_num >= reports_data.pagination.page - 2 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('report.my_reports', page=page_num, status=current_status) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reports_data.pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('report.my_reports', page=reports_data.pagination.page+1, status=current_status) }}">
+                                Next
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-flag" style="font-size: 4rem; color: #6c757d;"></i>
+                        <h4 class="mt-3 text-muted">No Reports Found</h4>
+                        <p class="text-muted">
+                            {% if current_status %}
+                                You don't have any {{ current_status }} reports.
+                            {% else %}
+                                You haven't submitted any reports yet.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                            <i class="bi bi-house"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+</style>
+{% endblock %}

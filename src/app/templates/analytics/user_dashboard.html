@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}My Activity Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-dashboard {
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 300;
+    }
+    
+    .dashboard-header p {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .engagement-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .engagement-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+    
+    .engagement-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .engagement-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.7;
+    }
+    
+    .engagement-icon.facts {
+        color: #007bff;
+    }
+    
+    .engagement-icon.comments {
+        color: #28a745;
+    }
+    
+    .engagement-icon.votes {
+        color: #ffc107;
+    }
+    
+    .engagement-icon.sessions {
+        color: #6f42c1;
+    }
+    
+    .engagement-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .engagement-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .activity-timeline {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .timeline-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.2rem;
+        color: white;
+    }
+    
+    .timeline-icon.fact {
+        background-color: #007bff;
+    }
+    
+    .timeline-icon.comment {
+        background-color: #28a745;
+    }
+    
+    .timeline-icon.vote {
+        background-color: #ffc107;
+    }
+    
+    .timeline-content {
+        flex: 1;
+    }
+    
+    .timeline-action {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 2px;
+    }
+    
+    .timeline-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .timeline-time {
+        color: #999;
+        font-size: 0.8rem;
+        margin-left: 15px;
+    }
+    
+    .engagement-score {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        color: white;
+        position: relative;
+    }
+    
+    .score-circle.excellent {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    .score-circle.good {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+    }
+    
+    .score-circle.average {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+    
+    .score-circle.low {
+        background: linear-gradient(135deg, #6c757d, #495057);
+    }
+    
+    .score-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .score-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .activity-chart {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .achievements {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .achievement-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+    }
+    
+    .achievement-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.5rem;
+        color: white;
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+    
+    .achievement-content {
+        flex: 1;
+    }
+    
+    .achievement-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 2px;
+    }
+    
+    .achievement-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .user-dashboard {
+            padding: 10px;
+        }
+        
+        .dashboard-header {
+            padding: 20px;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2rem;
+        }
+        
+        .engagement-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .timeline-item {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+        
+        .timeline-time {
+            margin-left: 0;
+            margin-top: 5px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-dashboard">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-user-chart"></i> My Activity Dashboard</h1>
+        <p>Track your engagement and contributions to the community</p>
+    </div>
+    
+    <!-- Engagement Overview -->
+    <div class="engagement-overview">
+        <div class="engagement-card">
+            <div class="engagement-icon facts">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="engagement-value">{{ engagement.content_created or 0 }}</div>
+            <div class="engagement-label">Facts & Comments</div>
+        </div>
+        
+        <div class="engagement-card">
+            <div class="engagement-icon votes">
+                <i class="fas fa-thumbs-up"></i>
+            </div>
+            <div class="engagement-value">{{ engagement.interactions or 0 }}</div>
+            <div class="engagement-label">Votes Cast</div>
+        </div>
+        
+        <div class="engagement-card">
+            <div class="engagement-icon sessions">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="engagement-value">{{ engagement.total_sessions or 0 }}</div>
+            <div class="engagement-label">Sessions</div>
+        </div>
+        
+        <div class="engagement-card">
+            <div class="engagement-icon comments">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="engagement-value">{{ "%.1f"|format(engagement.engagement_score or 0) }}</div>
+            <div class="engagement-label">Engagement Score</div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Activity Timeline -->
+        <div class="col-lg-8">
+            <div class="activity-timeline">
+                <div class="timeline-title">Recent Activity</div>
+                <div id="activityTimeline">
+                    {% if engagement.daily_metrics %}
+                        {% for day in engagement.daily_metrics[-7:] %}
+                            {% if day.facts_created > 0 %}
+                            <div class="timeline-item">
+                                <div class="timeline-icon fact">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-action">Created {{ day.facts_created }} fact{{ 's' if day.facts_created != 1 else '' }}</div>
+                                    <div class="timeline-description">Shared new information with the community</div>
+                                </div>
+                                <div class="timeline-time">{{ day.date }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if day.comments_created > 0 %}
+                            <div class="timeline-item">
+                                <div class="timeline-icon comment">
+                                    <i class="fas fa-comment"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-action">Posted {{ day.comments_created }} comment{{ 's' if day.comments_created != 1 else '' }}</div>
+                                    <div class="timeline-description">Engaged in community discussions</div>
+                                </div>
+                                <div class="timeline-time">{{ day.date }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if day.votes_cast > 0 %}
+                            <div class="timeline-item">
+                                <div class="timeline-icon vote">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-action">Cast {{ day.votes_cast }} vote{{ 's' if day.votes_cast != 1 else '' }}</div>
+                                    <div class="timeline-description">Helped evaluate content quality</div>
+                                </div>
+                                <div class="timeline-time">{{ day.date }}</div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent activity to display</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Engagement Score & Achievements -->
+        <div class="col-lg-4">
+            <div class="engagement-score">
+                {% set score = engagement.engagement_score or 0 %}
+                {% if score >= 100 %}
+                    {% set score_class = "excellent" %}
+                    {% set score_text = "Excellent" %}
+                {% elif score >= 50 %}
+                    {% set score_class = "good" %}
+                    {% set score_text = "Good" %}
+                {% elif score >= 20 %}
+                    {% set score_class = "average" %}
+                    {% set score_text = "Average" %}
+                {% else %}
+                    {% set score_class = "low" %}
+                    {% set score_text = "Getting Started" %}
+                {% endif %}
+                
+                <div class="score-circle {{ score_class }}">
+                    {{ "%.0f"|format(score) }}
+                </div>
+                <div class="score-label">{{ score_text }} Engagement</div>
+                <div class="score-description">
+                    {% if score >= 100 %}
+                        You're a highly active community member!
+                    {% elif score >= 50 %}
+                        Great job contributing to the community!
+                    {% elif score >= 20 %}
+                        Keep up the good work!
+                    {% else %}
+                        Start engaging to build your score!
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="achievements mt-4">
+                <div class="timeline-title">Achievements</div>
+                
+                {% if engagement.content_created >= 10 %}
+                <div class="achievement-item">
+                    <div class="achievement-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="achievement-content">
+                        <div class="achievement-title">Content Creator</div>
+                        <div class="achievement-description">Created 10+ pieces of content</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if engagement.interactions >= 50 %}
+                <div class="achievement-item">
+                    <div class="achievement-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div class="achievement-content">
+                        <div class="achievement-title">Active Voter</div>
+                        <div class="achievement-description">Cast 50+ votes</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if engagement.total_sessions >= 30 %}
+                <div class="achievement-item">
+                    <div class="achievement-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="achievement-content">
+                        <div class="achievement-title">Regular Visitor</div>
+                        <div class="achievement-description">30+ sessions this month</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if not (engagement.content_created >= 10 or engagement.interactions >= 50 or engagement.total_sessions >= 30) %}
+                <p class="text-muted text-center">Keep engaging to unlock achievements!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="activity-chart">
+                <div class="chart-title">Daily Activity Over Time</div>
+                <canvas id="activityChart" width="400" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+class UserDashboard {
+    constructor() {
+        this.chart = null;
+        this.initializeChart();
+    }
+    
+    initializeChart() {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        
+        // Prepare data from engagement metrics
+        const dailyMetrics = {{ engagement.daily_metrics | tojson | safe }};
+        
+        if (!dailyMetrics || dailyMetrics.length === 0) {
+            // Show empty state
+            ctx.fillStyle = '#666';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No activity data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            return;
+        }
+        
+        const dates = dailyMetrics.map(m => m.date);
+        const factsData = dailyMetrics.map(m => m.facts_created);
+        const commentsData = dailyMetrics.map(m => m.comments_created);
+        const votesData = dailyMetrics.map(m => m.votes_cast);
+        
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Facts Created',
+                        data: factsData,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Comments Posted',
+                        data: commentsData,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Votes Cast',
+                        data: votesData,
+                        borderColor: '#ffc107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new UserDashboard();
+});
+</script>
+{% endblock %}

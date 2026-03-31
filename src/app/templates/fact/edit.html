@@ -1,0 +1,253 @@
+{% extends "base/base.html" %}
+
+{% block title %}Edit Fact - Fact Checker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-pencil"></i> Edit Fact</h4>
+            </div>
+            <div class="card-body">
+                <!-- Back to Fact Link -->
+                <div class="mb-3">
+                    <a href="{{ url_for('fact.view', fact_id=fact.id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to Fact
+                    </a>
+                </div>
+
+                <!-- Edit Form -->
+                <form method="POST" id="edit-fact-form">
+                    <div class="mb-3">
+                        <label for="content" class="form-label">
+                            <strong>Fact Content</strong>
+                            <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="content" 
+                                  name="content" 
+                                  rows="4" 
+                                  maxlength="500"
+                                  data-max-length="500"
+                                  placeholder="Enter your fact here..."
+                                  required>{{ content if content else fact.content }}</textarea>
+                        <div class="form-text">
+                            <span class="character-count"></span>
+                            <div class="mt-1">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Make sure your fact is accurate and well-sourced. 
+                                    You can include hashtags using #tag format.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_reason" class="form-label">
+                            <strong>Reason for Edit</strong>
+                            <span class="text-muted">(Optional)</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="edit_reason" 
+                               name="edit_reason" 
+                               maxlength="200"
+                               value="{{ edit_reason if edit_reason else '' }}"
+                               placeholder="e.g., Fixed typo, Added more details, Corrected information">
+                        <div class="form-text">
+                            <small class="text-muted">
+                                Briefly explain what you changed. This helps maintain transparency.
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Current Fact Preview -->
+                    <div class="mb-4">
+                        <h6>Current Fact:</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-0">{{ fact.content }}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i>
+                                    Originally posted {{ fact.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                    {% if fact.edit_count > 0 %}
+                                    <span class="mx-1">•</span>
+                                    <i class="bi bi-pencil"></i>
+                                    Edited {{ fact.edit_count }} time{{ 's' if fact.edit_count != 1 else '' }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('fact.view', fact_id=fact.id) }}" class="btn btn-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                        <div>
+                            {% if fact.edit_count > 0 %}
+                            <a href="{{ url_for('fact.history', fact_id=fact.id) }}" class="btn btn-outline-info">
+                                <i class="bi bi-clock-history"></i> View Edit History
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Edit Guidelines -->
+                <div class="mt-4">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightbulb"></i> Editing Guidelines
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                <li>Make sure your edits improve the accuracy or clarity of the fact</li>
+                                <li>Provide a clear reason for your edit when making significant changes</li>
+                                <li>Avoid making unnecessary or trivial edits</li>
+                                <li>All edits are tracked and can be viewed by other users</li>
+                                <li>Facts with votes may require moderator approval for major changes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.character-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+    float: right;
+}
+
+.character-count.warning {
+    color: #ffc107;
+}
+
+.character-count.danger {
+    color: #dc3545;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.card.bg-light {
+    border-left: 4px solid #6c757d;
+}
+
+.btn {
+    border-radius: 6px;
+}
+
+.card.border-info {
+    border-width: 2px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupCharacterCounter();
+    setupFormValidation();
+});
+
+function setupCharacterCounter() {
+    const textarea = document.getElementById('content');
+    const counter = document.querySelector('.character-count');
+    
+    if (textarea && counter) {
+        function updateCount() {
+            const current = textarea.value.length;
+            const max = parseInt(textarea.getAttribute('data-max-length'));
+            
+            counter.textContent = `${current}/${max}`;
+            
+            // Remove existing classes
+            counter.classList.remove('warning', 'danger');
+            
+            // Add appropriate class based on usage
+            if (current > max) {
+                counter.classList.add('danger');
+            } else if (current > max * 0.9) {
+                counter.classList.add('danger');
+            } else if (current > max * 0.8) {
+                counter.classList.add('warning');
+            }
+        }
+        
+        // Update on input
+        textarea.addEventListener('input', updateCount);
+        
+        // Initial update
+        updateCount();
+    }
+}
+
+function setupFormValidation() {
+    const form = document.getElementById('edit-fact-form');
+    const textarea = document.getElementById('content');
+    
+    if (form && textarea) {
+        form.addEventListener('submit', function(e) {
+            const content = textarea.value.trim();
+            const maxLength = parseInt(textarea.getAttribute('data-max-length'));
+            
+            // Check if content is empty
+            if (!content) {
+                e.preventDefault();
+                alert('Please enter some content for your fact.');
+                textarea.focus();
+                return false;
+            }
+            
+            // Check if content exceeds maximum length
+            if (content.length > maxLength) {
+                e.preventDefault();
+                alert(`Your fact is too long. Please keep it under ${maxLength} characters.`);
+                textarea.focus();
+                return false;
+            }
+            
+            // Check if content is the same as original
+            const originalContent = {{ fact.content | tojson }};
+            if (content === originalContent) {
+                const editReason = document.getElementById('edit_reason').value.trim();
+                if (!editReason) {
+                    const confirmSave = confirm('You haven\'t made any changes to the content. Do you still want to save?');
+                    if (!confirmSave) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        });
+    }
+}
+
+// Auto-resize textarea
+document.getElementById('content').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+</script>
+{% endblock %}

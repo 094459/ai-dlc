@@ -1,0 +1,291 @@
+/* Custom CSS for Fact Checker Application */
+
+/* Global Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+/* Navigation Styles */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Card Styles */
+.fact-card {
+    border-left: 4px solid #007bff;
+    transition: transform 0.2s ease-in-out;
+}
+
+.fact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.comment-card {
+    border-left: 3px solid #6c757d;
+    margin-left: 20px;
+}
+
+.comment-card.level-1 {
+    margin-left: 40px;
+    border-left-color: #28a745;
+}
+
+.comment-card.level-2 {
+    margin-left: 60px;
+    border-left-color: #ffc107;
+}
+
+/* Vote Styles */
+.vote-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.vote-btn {
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.vote-btn:hover {
+    background-color: #f8f9fa;
+}
+
+.vote-btn.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.vote-count {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Fact Vote Styles */
+.fact-vote-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 2px solid;
+    background: none;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.fact-vote-btn.fact {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.fact-vote-btn.fact:hover,
+.fact-vote-btn.fact.active {
+    background-color: #28a745;
+    color: white;
+}
+
+.fact-vote-btn.fake {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.fact-vote-btn.fake:hover,
+.fact-vote-btn.fake.active {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Form Styles */
+.form-floating textarea {
+    min-height: 120px;
+}
+
+.character-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+}
+
+.character-count.warning {
+    color: #ffc107;
+}
+
+.character-count.danger {
+    color: #dc3545;
+}
+
+/* Hashtag Styles */
+.hashtag {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.hashtag:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Resource Styles */
+.resource-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+}
+
+.resource-item img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.resource-url {
+    word-break: break-all;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.resource-url:hover {
+    text-decoration: underline;
+}
+
+/* Profile Styles */
+.profile-photo {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #007bff;
+}
+
+.profile-photo-sm {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Notification Styles */
+.notification-item {
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #e3f2fd;
+    border-left-color: #2196f3;
+}
+
+.notification-item.read {
+    background-color: #f5f5f5;
+    border-left-color: #9e9e9e;
+}
+
+/* Admin Styles */
+.admin-card {
+    border-top: 4px solid #dc3545;
+}
+
+.stats-card {
+    text-align: center;
+    padding: 20px;
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* Moderation Styles */
+.moderation-action {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.moderation-action.warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+}
+
+.moderation-action.suspension {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.moderation-action.ban {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .comment-card {
+        margin-left: 10px;
+    }
+    
+    .comment-card.level-1 {
+        margin-left: 20px;
+    }
+    
+    .comment-card.level-2 {
+        margin-left: 30px;
+    }
+    
+    .vote-buttons {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Utility Classes */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.border-start-primary {
+    border-left: 4px solid #007bff !important;
+}
+
+.border-start-success {
+    border-left: 4px solid #28a745 !important;
+}
+
+.border-start-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.border-start-danger {
+    border-left: 4px solid #dc3545 !important;
+}

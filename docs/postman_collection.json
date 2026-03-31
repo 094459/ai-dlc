@@ -1,0 +1,335 @@
+{
+  "info": {
+    "name": "Fact Checker API",
+    "description": "Complete API collection for the Fact Checker Application",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"confirm_password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/session",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "session"]
+            }
+          }
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Facts",
+      "item": [
+        {
+          "name": "List Facts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/facts?page=1&per_page=20&sort=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["facts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "newest"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Fact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is a new fact about something important.\",\n  \"resources\": [\n    {\n      \"url\": \"https://example.com/source\",\n      \"title\": \"Source Title\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/facts",
+              "host": ["{{baseUrl}}"],
+              "path": ["facts"]
+            }
+          }
+        },
+        {
+          "name": "Get Fact",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/facts/{{fact_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["facts", "{{fact_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Fact",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated fact content\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/facts/{{fact_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["facts", "{{fact_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Fact",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/facts/{{fact_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["facts", "{{fact_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voting",
+      "item": [
+        {
+          "name": "Vote on Fact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vote_type\": \"fact\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voting/fact/{{fact_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["voting", "fact", "{{fact_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Vote on Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vote_type\": \"upvote\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voting/comment/{{comment_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["voting", "comment", "{{comment_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Get Fact Comments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/comments/fact/{{fact_id}}?page=1&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "fact", "{{fact_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is my comment on the fact\",\n  \"fact_id\": \"{{fact_id}}\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?search=&status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk User Action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_ids\": [\"user-uuid-1\", \"user-uuid-2\"],\n  \"action\": \"suspend\",\n  \"reason\": \"Violation of terms of service\",\n  \"duration_days\": 7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/bulk-action",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "bulk-action"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

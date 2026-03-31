@@ -1,0 +1,113 @@
+{% extends "base/base.html" %}
+
+{% block title %}Submit Fact - Fact Checker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-plus-circle"></i> Submit a New Fact</h4>
+                <p class="mb-0 text-muted">Share information with the community and help fight misinformation</p>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Fact Content *</label>
+                        <textarea class="form-control" 
+                                  id="content" 
+                                  name="content" 
+                                  rows="6"
+                                  required 
+                                  maxlength="500"
+                                  data-max-length="500"
+                                  placeholder="Enter your fact here. Be clear, concise, and accurate. You can use hashtags like #science #health to categorize your fact.">{{ content or '' }}</textarea>
+                        <div class="form-text">
+                            <div class="d-flex justify-content-between">
+                                <span>
+                                    <i class="bi bi-info-circle"></i>
+                                    Use hashtags (#example) to categorize your fact
+                                </span>
+                                <span class="character-count"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Guidelines -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-lightbulb"></i> Fact Submission Guidelines</h6>
+                        <ul class="mb-0 small">
+                            <li>Ensure your fact is accurate and verifiable</li>
+                            <li>Include sources when possible (you can add URLs after submission)</li>
+                            <li>Use clear, simple language that everyone can understand</li>
+                            <li>Add relevant hashtags to help others discover your fact</li>
+                            <li>Avoid personal opinions - stick to factual information</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('fact.list') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Submit Fact
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Next Steps Info -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-arrow-right-circle"></i> What happens next?</h6>
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="bi bi-upload text-primary" style="font-size: 2rem;"></i>
+                        <h6 class="mt-2">1. Submit</h6>
+                        <small class="text-muted">Your fact is published immediately</small>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="bi bi-link-45deg text-success" style="font-size: 2rem;"></i>
+                        <h6 class="mt-2">2. Add Resources</h6>
+                        <small class="text-muted">Attach supporting URLs and images</small>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+                        <h6 class="mt-2">3. Community Review</h6>
+                        <small class="text-muted">Others can vote and comment</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.character-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.character-count.warning {
+    color: #ffc107;
+}
+
+.character-count.danger {
+    color: #dc3545;
+}
+</style>
+{% endblock %}

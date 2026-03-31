@@ -1,0 +1,727 @@
+{% extends "base.html" %}
+
+{% block title %}System Configuration - Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .config-category {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .config-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+        transition: all 0.2s;
+    }
+    
+    .config-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .config-key {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .config-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .config-value {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 0.75rem;
+        font-family: 'Courier New', monospace;
+        margin-bottom: 1rem;
+    }
+    
+    .config-meta {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .config-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .badge-public {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-private {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge-string {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .badge-integer {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge-boolean {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .badge-json {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .config-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .backup-section {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .validation-feedback {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .validation-error {
+        color: #dc3545;
+    }
+    
+    .validation-warning {
+        color: #856404;
+    }
+    
+    .validation-success {
+        color: #155724;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    
+    .loading-spinner {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .category-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px 10px 0 0;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    }
+    
+    .search-box {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    System Configuration
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">Manage application settings and feature flags</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light me-2" onclick="initializeDefaults()">
+                    <i class="fas fa-plus me-1"></i>
+                    Initialize Defaults
+                </button>
+                <button class="btn btn-light" onclick="refreshConfigurations()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Search and Filter -->
+    <div class="search-box">
+        <div class="row">
+            <div class="col-md-6">
+                <label for="configSearch" class="form-label">Search Configurations</label>
+                <input type="text" class="form-control" id="configSearch" 
+                       placeholder="Search by key or description..." onkeyup="filterConfigurations()">
+            </div>
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">Category</label>
+                <select class="form-select" id="categoryFilter" onchange="filterConfigurations()">
+                    <option value="">All Categories</option>
+                    {% for category in config_categories.keys() %}
+                    <option value="{{ category }}">{{ category|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="typeFilter" class="form-label">Type</label>
+                <select class="form-select" id="typeFilter" onchange="filterConfigurations()">
+                    <option value="">All Types</option>
+                    <option value="string">String</option>
+                    <option value="integer">Integer</option>
+                    <option value="boolean">Boolean</option>
+                    <option value="json">JSON</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup and Restore Section -->
+    <div class="backup-section">
+        <div class="category-header">
+            <h5 class="mb-0">
+                <i class="fas fa-save me-2"></i>
+                Backup & Restore
+            </h5>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Create Backup</h6>
+                <p class="text-muted">Export all configuration settings to a JSON file</p>
+                <button class="btn btn-primary" onclick="createBackup()">
+                    <i class="fas fa-download me-1"></i>
+                    Create Backup
+                </button>
+            </div>
+            <div class="col-md-6">
+                <h6>Restore from Backup</h6>
+                <p class="text-muted">Import configuration settings from a backup file</p>
+                <input type="file" class="form-control mb-2" id="backupFile" accept=".json">
+                <button class="btn btn-warning" onclick="restoreBackup()">
+                    <i class="fas fa-upload me-1"></i>
+                    Restore Backup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Categories -->
+    {% for category, configs in config_categories.items() %}
+    <div class="config-category" data-category="{{ category }}">
+        <div class="category-header">
+            <h5 class="mb-0">
+                <i class="fas fa-{% if category == 'general' %}cog{% elif category == 'email' %}envelope{% elif category == 'max' %}limit{% elif category == 'enable' %}toggle-on{% elif category == 'maintenance' %}tools{% elif category == 'session' %}clock{% elif category == 'analytics' %}chart-bar{% elif category == 'moderation' %}shield-alt{% elif category == 'fact' %}file-alt{% elif category == 'comment' %}comment{% else %}cogs{% endif %} me-2"></i>
+                {{ category|title }} Settings
+            </h5>
+        </div>
+        
+        {% for key, config in configs.items() %}
+        <div class="config-item" data-key="{{ key }}" data-type="{{ config.data_type }}">
+            <div class="config-key">{{ key }}</div>
+            
+            {% if config.description %}
+            <div class="config-description">{{ config.description }}</div>
+            {% endif %}
+            
+            <div class="config-meta">
+                <span class="config-badge badge-{{ config.data_type }}">{{ config.data_type|title }}</span>
+                <span class="config-badge badge-{% if config.is_public %}public{% else %}private{% endif %}">
+                    {% if config.is_public %}Public{% else %}Private{% endif %}
+                </span>
+                {% if config.updated_at %}
+                <small class="text-muted">
+                    Updated: {{ moment(config.updated_at).fromNow() }}
+                </small>
+                {% endif %}
+            </div>
+            
+            <div class="config-value" id="value-{{ key }}">
+                {% if config.data_type == 'boolean' %}
+                    {% if config.value %}true{% else %}false{% endif %}
+                {% elif config.data_type == 'json' %}
+                    {{ config.value|tojson|safe }}
+                {% else %}
+                    {{ config.value }}
+                {% endif %}
+            </div>
+            
+            <div class="validation-feedback" id="feedback-{{ key }}"></div>
+            
+            <div class="config-actions">
+                <button class="btn btn-outline-primary btn-sm" onclick="editConfig('{{ key }}', '{{ config.data_type }}')">
+                    <i class="fas fa-edit me-1"></i>
+                    Edit
+                </button>
+                <button class="btn btn-outline-info btn-sm" onclick="validateConfig('{{ key }}')">
+                    <i class="fas fa-check me-1"></i>
+                    Validate
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="resetConfig('{{ key }}')">
+                    <i class="fas fa-undo me-1"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    
+    {% if not config_categories %}
+    <div class="text-center py-5">
+        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No configurations found</h4>
+        <p class="text-muted">Initialize default configurations to get started</p>
+        <button class="btn btn-primary" onclick="initializeDefaults()">
+            <i class="fas fa-plus me-1"></i>
+            Initialize Default Configurations
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div>Processing request...</div>
+    </div>
+</div>
+
+<!-- Edit Configuration Modal -->
+<div class="modal fade" id="editConfigModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editConfigForm">
+                    <div class="mb-3">
+                        <label for="configKey" class="form-label">Configuration Key</label>
+                        <input type="text" class="form-control" id="configKey" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="configValue" class="form-label">Value</label>
+                        <div id="configValueContainer">
+                            <!-- Dynamic input based on type -->
+                        </div>
+                        <div class="form-text">
+                            <span id="configTypeHelp"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="configDescription" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="configDescription" rows="2" 
+                                  placeholder="Optional description for this change..."></textarea>
+                    </div>
+                    <div id="validationResult" class="validation-feedback"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveConfig()">
+                    <i class="fas fa-save me-1"></i>
+                    Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+let currentConfigKey = '';
+let currentConfigType = '';
+
+function filterConfigurations() {
+    const searchTerm = document.getElementById('configSearch').value.toLowerCase();
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    
+    document.querySelectorAll('.config-category').forEach(category => {
+        const categoryName = category.dataset.category;
+        let categoryVisible = false;
+        
+        if (!categoryFilter || categoryName === categoryFilter) {
+            category.querySelectorAll('.config-item').forEach(item => {
+                const key = item.dataset.key.toLowerCase();
+                const type = item.dataset.type;
+                const description = item.querySelector('.config-description')?.textContent.toLowerCase() || '';
+                
+                const matchesSearch = !searchTerm || key.includes(searchTerm) || description.includes(searchTerm);
+                const matchesType = !typeFilter || type === typeFilter;
+                
+                if (matchesSearch && matchesType) {
+                    item.style.display = 'block';
+                    categoryVisible = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        category.style.display = categoryVisible ? 'block' : 'none';
+    });
+}
+
+function editConfig(key, type) {
+    currentConfigKey = key;
+    currentConfigType = type;
+    
+    document.getElementById('configKey').value = key;
+    
+    // Get current value
+    const currentValue = document.getElementById(`value-${key}`).textContent.trim();
+    
+    // Create appropriate input based on type
+    const container = document.getElementById('configValueContainer');
+    const helpText = document.getElementById('configTypeHelp');
+    
+    container.innerHTML = '';
+    
+    switch (type) {
+        case 'boolean':
+            container.innerHTML = `
+                <select class="form-select" id="configValue">
+                    <option value="true" ${currentValue === 'true' ? 'selected' : ''}>True</option>
+                    <option value="false" ${currentValue === 'false' ? 'selected' : ''}>False</option>
+                </select>
+            `;
+            helpText.textContent = 'Select true or false';
+            break;
+            
+        case 'integer':
+            container.innerHTML = `
+                <input type="number" class="form-control" id="configValue" value="${currentValue}" step="1">
+            `;
+            helpText.textContent = 'Enter a whole number';
+            break;
+            
+        case 'json':
+            container.innerHTML = `
+                <textarea class="form-control" id="configValue" rows="4" style="font-family: monospace;">${currentValue}</textarea>
+            `;
+            helpText.textContent = 'Enter valid JSON format';
+            break;
+            
+        default: // string
+            container.innerHTML = `
+                <input type="text" class="form-control" id="configValue" value="${currentValue}">
+            `;
+            helpText.textContent = 'Enter a text value';
+            break;
+    }
+    
+    new bootstrap.Modal(document.getElementById('editConfigModal')).show();
+}
+
+function validateConfig(key) {
+    const valueElement = document.getElementById(`value-${key}`);
+    const currentValue = valueElement.textContent.trim();
+    
+    fetch('{{ url_for("admin.api_validate_configuration") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            key: key,
+            value: currentValue
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const feedback = document.getElementById(`feedback-${key}`);
+        
+        if (data.valid) {
+            feedback.className = 'validation-feedback validation-success';
+            feedback.innerHTML = '<i class="fas fa-check me-1"></i>Configuration is valid';
+            
+            if (data.warnings && data.warnings.length > 0) {
+                feedback.innerHTML += '<br><small class="validation-warning">Warnings: ' + data.warnings.join(', ') + '</small>';
+            }
+        } else {
+            feedback.className = 'validation-feedback validation-error';
+            feedback.innerHTML = '<i class="fas fa-times me-1"></i>Validation errors: ' + data.errors.join(', ');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const feedback = document.getElementById(`feedback-${key}`);
+        feedback.className = 'validation-feedback validation-error';
+        feedback.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error validating configuration';
+    });
+}
+
+function saveConfig() {
+    const value = document.getElementById('configValue').value;
+    const description = document.getElementById('configDescription').value;
+    
+    // Validate before saving
+    fetch('{{ url_for("admin.api_validate_configuration") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            key: currentConfigKey,
+            value: value
+        })
+    })
+    .then(response => response.json())
+    .then(validationData => {
+        const resultDiv = document.getElementById('validationResult');
+        
+        if (!validationData.valid) {
+            resultDiv.className = 'validation-feedback validation-error';
+            resultDiv.innerHTML = '<i class="fas fa-times me-1"></i>Validation errors: ' + validationData.errors.join(', ');
+            return;
+        }
+        
+        if (validationData.warnings && validationData.warnings.length > 0) {
+            if (!confirm('Warnings found: ' + validationData.warnings.join(', ') + '\n\nDo you want to continue?')) {
+                return;
+            }
+        }
+        
+        // Save the configuration
+        showLoading();
+        
+        fetch(`{{ url_for("admin.api_configuration", config_key="PLACEHOLDER") }}`.replace('PLACEHOLDER', currentConfigKey), {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: currentConfigType === 'integer' ? parseInt(value) : 
+                       currentConfigType === 'boolean' ? value === 'true' :
+                       currentConfigType === 'json' ? JSON.parse(value) : value,
+                description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            bootstrap.Modal.getInstance(document.getElementById('editConfigModal')).hide();
+            
+            if (data.success) {
+                alert('Configuration updated successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            alert('An error occurred while saving configuration');
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const resultDiv = document.getElementById('validationResult');
+        resultDiv.className = 'validation-feedback validation-error';
+        resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error validating configuration';
+    });
+}
+
+function resetConfig(key) {
+    if (!confirm(`Are you sure you want to reset the configuration "${key}" to its default value?`)) {
+        return;
+    }
+    
+    // This would require additional API endpoint to get default values
+    alert('Reset functionality would require default value storage');
+}
+
+function createBackup() {
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_backup_configuration") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            // Download the backup file
+            const blob = new Blob([data.backup_data], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `config_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Configuration backup created successfully');
+        } else {
+            alert('Error creating backup: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while creating backup');
+    });
+}
+
+function restoreBackup() {
+    const fileInput = document.getElementById('backupFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a backup file');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to restore from this backup? This will overwrite current configurations.')) {
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const backupData = e.target.result;
+            JSON.parse(backupData); // Validate JSON
+            
+            showLoading();
+            
+            fetch('{{ url_for("admin.api_restore_configuration") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    backup_data: backupData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    alert('Configuration restored successfully');
+                    location.reload();
+                } else {
+                    alert('Error restoring backup: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('An error occurred while restoring backup');
+            });
+            
+        } catch (error) {
+            alert('Invalid backup file format');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+function initializeDefaults() {
+    if (!confirm('Are you sure you want to initialize default configurations? This will add missing default settings.')) {
+        return;
+    }
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_initialize_configuration") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            alert('Default configurations initialized successfully');
+            location.reload();
+        } else {
+            alert('Error initializing configurations: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while initializing configurations');
+    });
+}
+
+function refreshConfigurations() {
+    location.reload();
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+</script>
+{% endblock %}

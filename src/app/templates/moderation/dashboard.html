@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Moderation Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moderation-sidebar {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 56px);
+        border-right: 1px solid #dee2e6;
+    }
+    
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .priority-urgent { border-left: 4px solid #dc2626; }
+    .priority-high { border-left: 4px solid #f59e0b; }
+    .priority-medium { border-left: 4px solid #3b82f6; }
+    .priority-low { border-left: 4px solid #10b981; }
+    
+    .activity-item {
+        border-left: 3px solid #e5e7eb;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .activity-item.recent {
+        border-left-color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 col-lg-2 moderation-sidebar p-3">
+            <h5 class="text-muted mb-3">
+                <i class="bi bi-shield-check"></i> Moderation
+            </h5>
+            
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="{{ url_for('moderation.dashboard') }}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link" href="#" onclick="loadContentModeration()">
+                    <i class="bi bi-file-text"></i> Content
+                    <span class="badge bg-warning ms-2" id="pending-content">0</span>
+                </a>
+                <a class="nav-link" href="#" onclick="loadUserModeration()">
+                    <i class="bi bi-people"></i> Users
+                    <span class="badge bg-danger ms-2" id="attention-users">0</span>
+                </a>
+                <a class="nav-link" href="#" onclick="loadReportManagement()">
+                    <i class="bi bi-flag"></i> Reports
+                    <span class="badge bg-primary ms-2" id="pending-reports">0</span>
+                </a>
+                <a class="nav-link" href="#" onclick="loadWorkflowManagement()">
+                    <i class="bi bi-gear"></i> Workflows
+                </a>
+                <a class="nav-link" href="#" onclick="loadAnalytics()">
+                    <i class="bi bi-graph-up"></i> Analytics
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Moderation Dashboard</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="showQuickActions()">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-flag-fill text-primary fs-1"></i>
+                            <h3 class="mt-2 mb-1" id="total-reports">0</h3>
+                            <p class="text-muted mb-0">Pending Reports</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>
+                            <h3 class="mt-2 mb-1" id="total-users-attention">0</h3>
+                            <p class="text-muted mb-0">Users Need Attention</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                            <h3 class="mt-2 mb-1" id="total-actions-today">0</h3>
+                            <p class="text-muted mb-0">Actions Today</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-gear-fill text-info fs-1"></i>
+                            <h3 class="mt-2 mb-1" id="total-workflows">0</h3>
+                            <p class="text-muted mb-0">Active Workflows</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Dashboard Content -->
+            <div class="row">
+                <!-- Pending Reports -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-flag"></i> Recent Reports
+                            </h5>
+                            <a href="#" onclick="loadReportManagement()" class="btn btn-sm btn-outline-primary">
+                                View All
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-reports">
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-hourglass-split fs-1"></i>
+                                    <p class="mt-2">Loading reports...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Users Requiring Attention -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-people"></i> Users Requiring Attention
+                            </h5>
+                            <a href="#" onclick="loadUserModeration()" class="btn btn-sm btn-outline-primary">
+                                View All
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div id="attention-users-list">
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-hourglass-split fs-1"></i>
+                                    <p class="mt-2">Loading users...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i> Recent Moderation Activity
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-activity">
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-hourglass-split fs-1"></i>
+                                    <p class="mt-2">Loading activity...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="loadReportManagement()">
+                        <i class="bi bi-flag"></i> Review Pending Reports
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="loadUserModeration()">
+                        <i class="bi bi-people"></i> Check Users Needing Attention
+                    </button>
+                    <button class="btn btn-outline-info" onclick="loadContentModeration()">
+                        <i class="bi bi-file-text"></i> Review Moderated Content
+                    </button>
+                    <button class="btn btn-outline-success" onclick="loadWorkflowManagement()">
+                        <i class="bi bi-gear"></i> Manage Workflows
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dashboard functionality
+let dashboardData = {};
+
+// Load dashboard data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    
+    // Refresh data every 30 seconds
+    setInterval(loadDashboardData, 30000);
+});
+
+function loadDashboardData() {
+    fetch('/moderation/dashboard')
+        .then(response => response.json())
+        .then(data => {
+            dashboardData = data;
+            updateDashboardStats(data);
+            loadRecentReports();
+            loadUsersRequiringAttention();
+            loadRecentActivity();
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            showAlert('Error loading dashboard data', 'danger');
+        });
+}
+
+function updateDashboardStats(data) {
+    document.getElementById('total-reports').textContent = data.pending_reports || 0;
+    document.getElementById('total-users-attention').textContent = data.users_needing_attention || 0;
+    document.getElementById('total-actions-today').textContent = data.total_actions || 0;
+    document.getElementById('total-workflows').textContent = data.active_workflows || 0;
+    
+    // Update sidebar badges
+    document.getElementById('pending-reports').textContent = data.pending_reports || 0;
+    document.getElementById('attention-users').textContent = data.users_needing_attention || 0;
+}
+
+function loadRecentReports() {
+    fetch('/report/api/reports?status=pending&per_page=5')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recent-reports');
+            if (data.reports && data.reports.length > 0) {
+                container.innerHTML = data.reports.map(reportData => `
+                    <div class="border-bottom pb-2 mb-2 priority-${reportData.report.priority || 'medium'}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${reportData.category ? reportData.category.name : 'Unknown Category'}</h6>
+                                <p class="mb-1 text-muted small">${reportData.report.reason.substring(0, 100)}...</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> ${formatDate(reportData.report.created_at)}
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewReport('${reportData.report.id}')">
+                                Review
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center py-3">No pending reports</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading reports:', error);
+            document.getElementById('recent-reports').innerHTML = '<p class="text-danger text-center py-3">Error loading reports</p>';
+        });
+}
+
+function loadUsersRequiringAttention() {
+    fetch('/moderation/users/attention?per_page=5')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('attention-users-list');
+            if (data.users && data.users.length > 0) {
+                container.innerHTML = data.users.map(userData => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${userData.user.email}</h6>
+                                <p class="mb-1 text-muted small">
+                                    ${userData.user.warning_count} warnings • 
+                                    Status: ${userData.moderation_status}
+                                </p>
+                                <small class="text-muted">
+                                    Last warning: ${userData.user.last_warning_date ? formatDate(userData.user.last_warning_date) : 'None'}
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-warning" onclick="viewUser('${userData.user.id}')">
+                                Review
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center py-3">No users requiring attention</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            document.getElementById('attention-users-list').innerHTML = '<p class="text-danger text-center py-3">Error loading users</p>';
+        });
+}
+
+function loadRecentActivity() {
+    fetch('/moderation/content/history?per_page=10')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recent-activity');
+            if (data.actions && data.actions.length > 0) {
+                container.innerHTML = data.actions.map(actionData => `
+                    <div class="activity-item ${isRecent(actionData.action.created_at) ? 'recent' : ''}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${actionData.moderator ? actionData.moderator.email : 'System'}</strong>
+                                <span class="text-muted">${getActionDescription(actionData.action)}</span>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> ${formatDate(actionData.action.created_at)}
+                                </small>
+                            </div>
+                            <span class="badge bg-${getActionBadgeColor(actionData.action.action_type)}">
+                                ${actionData.action.action_type.replace('_', ' ')}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-muted text-center py-3">No recent activity</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading activity:', error);
+            document.getElementById('recent-activity').innerHTML = '<p class="text-danger text-center py-3">Error loading activity</p>';
+        });
+}
+
+// Navigation functions
+function loadContentModeration() {
+    window.location.href = '/moderation/content';
+}
+
+function loadUserModeration() {
+    window.location.href = '/moderation/users';
+}
+
+function loadReportManagement() {
+    window.location.href = '/moderation/reports';
+}
+
+function loadWorkflowManagement() {
+    window.location.href = '/moderation/workflows';
+}
+
+function loadAnalytics() {
+    window.location.href = '/moderation/analytics';
+}
+
+// Utility functions
+function refreshDashboard() {
+    loadDashboardData();
+    showAlert('Dashboard refreshed', 'success');
+}
+
+function showQuickActions() {
+    new bootstrap.Modal(document.getElementById('quickActionsModal')).show();
+}
+
+function viewReport(reportId) {
+    window.location.href = `/report/view/${reportId}`;
+}
+
+function viewUser(userId) {
+    window.location.href = `/moderation/users/${userId}`;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function isRecent(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffHours = (now - date) / (1000 * 60 * 60);
+    return diffHours < 1; // Consider recent if within 1 hour
+}
+
+function getActionDescription(action) {
+    const actionMap = {
+        'remove_temporary': `removed ${action.target_type}`,
+        'remove_permanent': `permanently removed ${action.target_type}`,
+        'restore': `restored ${action.target_type}`,
+        'hide': `hid ${action.target_type}`,
+        'user_warning': 'issued warning to user',
+        'user_suspension': 'suspended user',
+        'user_ban_permanent': 'permanently banned user',
+        'user_ban_temporary': 'temporarily banned user'
+    };
+    return actionMap[action.action_type] || action.action_type;
+}
+
+function getActionBadgeColor(actionType) {
+    if (actionType.includes('remove') || actionType.includes('ban')) return 'danger';
+    if (actionType.includes('warning') || actionType.includes('suspend')) return 'warning';
+    if (actionType.includes('restore')) return 'success';
+    return 'secondary';
+}
+
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

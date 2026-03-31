@@ -1,0 +1,168 @@
+{% extends "base/base.html" %}
+
+{% block title %}Home - Fact Checker{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white rounded p-5">
+            <div class="container text-center">
+                <h1 class="display-4">
+                    <i class="bi bi-shield-check"></i> Welcome to Fact Checker
+                </h1>
+                <p class="lead">
+                    Promoting truth and transparency through community verification
+                </p>
+                <p>
+                    Join our community in the fight against misinformation. Submit facts, 
+                    verify claims, and help build a more informed world.
+                </p>
+                {% if not current_user or not current_user.is_authenticated %}
+                <div class="mt-4">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg me-3">
+                        <i class="bi bi-person-plus"></i> Get Started
+                    </a>
+                    <a href="{{ url_for('fact.list') }}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-list-ul"></i> Browse Facts
+                    </a>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <a href="{{ url_for('fact.create') }}" class="btn btn-light btn-lg me-3">
+                        <i class="bi bi-plus-circle"></i> Submit a Fact
+                    </a>
+                    <a href="{{ url_for('fact.list') }}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-list-ul"></i> Browse Facts
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">How It Works</h2>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="bi bi-pencil-square text-primary" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Submit Facts</h5>
+                <p class="card-text">
+                    Share information with supporting evidence. Add URLs, images, 
+                    and hashtags to provide context and make your facts discoverable.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Verify & Vote</h5>
+                <p class="card-text">
+                    Review submitted facts and vote on their accuracy. Help the 
+                    community identify reliable information through collective verification.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="bi bi-chat-dots text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Discuss & Learn</h5>
+                <p class="card-text">
+                    Engage in meaningful discussions through comments. Share insights, 
+                    ask questions, and learn from diverse perspectives.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Facts Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>Recent Facts</h3>
+            <a href="{{ url_for('fact.list') }}" class="btn btn-outline-primary">
+                View All <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- Placeholder for recent facts -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card fact-card">
+                    <div class="card-body">
+                        <h6 class="card-title">Sample Fact</h6>
+                        <p class="card-text text-truncate-2">
+                            This is a sample fact that would appear here once facts are submitted to the system.
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> Sample User
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> 2 hours ago
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card fact-card">
+                    <div class="card-body">
+                        <h6 class="card-title">Another Sample Fact</h6>
+                        <p class="card-text text-truncate-2">
+                            This is another sample fact demonstrating how the fact listing would look.
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> Another User
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> 5 hours ago
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h4 class="text-center mb-4">Community Stats</h4>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="stats-number">0</div>
+                        <div class="text-muted">Facts Submitted</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-number">0</div>
+                        <div class="text-muted">Votes Cast</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-number">0</div>
+                        <div class="text-muted">Comments Posted</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-number">0</div>
+                        <div class="text-muted">Active Users</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

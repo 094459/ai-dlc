@@ -1,0 +1,838 @@
+openapi: 3.0.3
+info:
+  title: Fact Checker Application API
+  description: |
+    A comprehensive fact-checking platform API that provides endpoints for user authentication, 
+    fact management, community interaction, moderation, and administrative functions.
+    
+    ## Features
+    - User authentication and profile management
+    - Fact submission and verification
+    - Community voting and commenting
+    - Content moderation and reporting
+    - Analytics and insights
+    - Administrative dashboard
+    - UI framework components
+    
+    ## Authentication
+    This API uses session-based authentication. Users must log in to access protected endpoints.
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@factchecker.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://api.factchecker.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Facts
+    description: Fact content management
+  - name: Comments
+    description: Comment system
+  - name: Voting
+    description: Voting functionality
+  - name: Profile
+    description: User profile management
+  - name: Notifications
+    description: Notification system
+  - name: Reports
+    description: Content reporting
+  - name: Moderation
+    description: Moderation tools
+  - name: Analytics
+    description: Analytics and metrics
+  - name: Admin
+    description: Administrative functions
+  - name: UI Framework
+    description: UI components and theming
+
+paths:
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      description: Create a new user account with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, confirm_password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: password123
+                confirm_password:
+                  type: string
+                  example: password123
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and create session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      description: End user session
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/session:
+    get:
+      tags: [Authentication]
+      summary: Get session info
+      description: Get current session information
+      responses:
+        '200':
+          description: Session information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  # Fact Management Endpoints
+  /facts:
+    get:
+      tags: [Facts]
+      summary: List facts
+      description: Retrieve facts with optional filtering and pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: hashtag
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, most_voted]
+            default: newest
+      responses:
+        '200':
+          description: List of facts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      facts:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Fact'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Facts]
+      summary: Create fact
+      description: Submit a new fact
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+                  example: This is an important fact about science.
+                resources:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      title:
+                        type: string
+      responses:
+        '201':
+          description: Fact created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      fact:
+                        $ref: '#/components/schemas/Fact'
+
+  /facts/{fact_id}:
+    get:
+      tags: [Facts]
+      summary: Get fact
+      description: Retrieve a specific fact by ID
+      parameters:
+        - name: fact_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Fact details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      fact:
+                        $ref: '#/components/schemas/FactDetail'
+
+    put:
+      tags: [Facts]
+      summary: Update fact
+      description: Update a fact (requires ownership)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: fact_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Fact updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    delete:
+      tags: [Facts]
+      summary: Delete fact
+      description: Delete a fact (requires ownership or moderator role)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: fact_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Fact deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Voting Endpoints
+  /voting/fact/{fact_id}:
+    post:
+      tags: [Voting]
+      summary: Vote on fact
+      description: Cast a vote on a fact (fact or fake)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: fact_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vote_type]
+              properties:
+                vote_type:
+                  type: string
+                  enum: [fact, fake]
+      responses:
+        '200':
+          description: Vote recorded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      vote_counts:
+                        $ref: '#/components/schemas/FactVoteCounts'
+
+  /voting/comment/{comment_id}:
+    post:
+      tags: [Voting]
+      summary: Vote on comment
+      description: Cast a vote on a comment (upvote or downvote)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vote_type]
+              properties:
+                vote_type:
+                  type: string
+                  enum: [upvote, downvote]
+      responses:
+        '200':
+          description: Vote recorded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      vote_counts:
+                        $ref: '#/components/schemas/CommentVoteCounts'
+
+  # Comment Endpoints
+  /comments:
+    post:
+      tags: [Comments]
+      summary: Create comment
+      description: Post a new comment on a fact
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, fact_id]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                fact_id:
+                  type: string
+                  format: uuid
+                parent_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      comment:
+                        $ref: '#/components/schemas/Comment'
+
+  /comments/fact/{fact_id}:
+    get:
+      tags: [Comments]
+      summary: Get fact comments
+      description: Retrieve comments for a specific fact
+      parameters:
+        - name: fact_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, most_voted]
+            default: newest
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      comments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CommentWithReplies'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+  # Admin Endpoints
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Admin dashboard
+      description: Get admin dashboard overview data
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      dashboard:
+                        $ref: '#/components/schemas/AdminDashboard'
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      description: Get user management data
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, banned]
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, moderator, admin]
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AdminUserView'
+
+  /admin/users/bulk-action:
+    post:
+      tags: [Admin]
+      summary: Bulk user action
+      description: Perform bulk actions on multiple users
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids, action]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                action:
+                  type: string
+                  enum: [activate, suspend, ban, promote_moderator, demote_moderator]
+                reason:
+                  type: string
+                duration_days:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Bulk action completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: object
+                        properties:
+                          successful:
+                            type: integer
+                          failed:
+                            type: integer
+                          errors:
+                            type: array
+                            items:
+                              type: string
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+        code:
+          type: string
+          example: ERROR_CODE
+        details:
+          type: object
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        is_admin:
+          type: boolean
+        is_moderator:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Fact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        vote_counts:
+          $ref: '#/components/schemas/FactVoteCounts'
+        hashtags:
+          type: array
+          items:
+            type: string
+        comment_count:
+          type: integer
+
+    FactDetail:
+      allOf:
+        - $ref: '#/components/schemas/Fact'
+        - type: object
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/Resource'
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        fact_id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        vote_counts:
+          $ref: '#/components/schemas/CommentVoteCounts'
+
+    CommentWithReplies:
+      allOf:
+        - $ref: '#/components/schemas/Comment'
+        - type: object
+          properties:
+            replies:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        resource_type:
+          type: string
+          enum: [url, image]
+
+    FactVoteCounts:
+      type: object
+      properties:
+        fact:
+          type: integer
+        fake:
+          type: integer
+
+    CommentVoteCounts:
+      type: object
+      properties:
+        upvotes:
+          type: integer
+        downvotes:
+          type: integer
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+    AdminDashboard:
+      type: object
+      properties:
+        overview:
+          type: object
+          properties:
+            total_users:
+              type: integer
+            total_facts:
+              type: integer
+            total_comments:
+              type: integer
+            active_users_week:
+              type: integer
+        moderation:
+          type: object
+          properties:
+            pending_reports:
+              type: integer
+            reports_today:
+              type: integer
+            moderation_actions_today:
+              type: integer
+        system_health:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [healthy, warning, critical]
+            uptime:
+              type: string
+            response_time:
+              type: string
+
+    AdminUserView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        is_active:
+          type: boolean
+        is_suspended:
+          type: boolean
+        is_banned:
+          type: boolean
+        is_admin:
+          type: boolean
+        is_moderator:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+
+security:
+  - sessionAuth: []

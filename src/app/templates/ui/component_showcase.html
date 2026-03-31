@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Component Library{% endblock %}
+
+{% block extra_css %}
+<link href="/ui/css/framework.css?theme={{ current_theme }}" rel="stylesheet">
+<style>
+    .component-showcase {
+        padding: 2rem 0;
+    }
+    
+    .component-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .component-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .component-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .component-header {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .component-header h5 {
+        margin: 0;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .component-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+    
+    .component-preview {
+        padding: 1.5rem;
+        background: white;
+    }
+    
+    .component-props {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .prop-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .prop-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0;
+        font-size: 0.85rem;
+    }
+    
+    .prop-name {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .prop-type {
+        background: #e9ecef;
+        color: #495057;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .required-badge {
+        background: #dc3545;
+        color: white;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 0.65rem;
+        margin-left: 0.25rem;
+    }
+    
+    .showcase-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #495057;
+        text-decoration: none;
+        border-radius: 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-tab:hover,
+    .filter-tab.active {
+        background: var(--color-primary, #007bff);
+        color: white;
+        border-color: var(--color-primary, #007bff);
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container component-showcase">
+    <div class="showcase-header">
+        <h1 class="display-4 mb-3">Component Library</h1>
+        <p class="lead text-muted">
+            Explore our comprehensive collection of reusable UI components. 
+            Each component is designed for accessibility, responsiveness, and consistency.
+        </p>
+        
+        <div class="filter-tabs">
+            <a href="#" class="filter-tab active" data-filter="all">All Components</a>
+            <a href="#" class="filter-tab" data-filter="form">Form Elements</a>
+            <a href="#" class="filter-tab" data-filter="navigation">Navigation</a>
+            <a href="#" class="filter-tab" data-filter="feedback">Feedback</a>
+            <a href="#" class="filter-tab" data-filter="layout">Layout</a>
+        </div>
+    </div>
+    
+    <div class="component-grid">
+        {% for component_name, component_def in components.items() %}
+        <div class="component-card" data-category="{{ get_component_category(component_name) }}">
+            <div class="component-header">
+                <h5>{{ component_name | title }}</h5>
+                <div class="component-description">
+                    {{ get_component_description(component_name) }}
+                </div>
+            </div>
+            
+            <div class="component-preview">
+                {{ render_component_example(component_name) | safe }}
+            </div>
+            
+            <div class="component-props">
+                <h6 class="mb-2">Properties</h6>
+                <ul class="prop-list">
+                    {% for prop_name, prop_def in component_def.props.items() %}
+                    <li class="prop-item">
+                        <span class="prop-name">
+                            {{ prop_name }}
+                            {% if prop_def.get('required') %}
+                            <span class="required-badge">required</span>
+                            {% endif %}
+                        </span>
+                        <span class="prop-type">{{ prop_def.type }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="mt-3">
+                    <a href="{{ url_for('ui.component_detail', component_name=component_name) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-info-circle me-1"></i>View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="text-center mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h3>Need Help?</h3>
+                <p class="text-muted mb-4">
+                    Check out our comprehensive documentation and interactive playground 
+                    to learn more about using these components effectively.
+                </p>
+                
+                <a href="{{ url_for('ui.playground') }}" class="btn btn-primary me-3">
+                    <i class="fas fa-play me-2"></i>Try Playground
+                </a>
+                <a href="{{ url_for('ui.style_guide') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-book me-2"></i>Style Guide
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Component filtering
+document.addEventListener('DOMContentLoaded', function() {
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const componentCards = document.querySelectorAll('.component-card');
+    
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Update active tab
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter components
+            const filter = this.dataset.filter;
+            componentCards.forEach(card => {
+                if (filter === 'all' || card.dataset.category === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+// Component category mapping
+function getComponentCategory(componentName) {
+    const categories = {
+        'button': 'form',
+        'form_field': 'form',
+        'card': 'layout',
+        'modal': 'feedback',
+        'alert': 'feedback',
+        'pagination': 'navigation',
+        'breadcrumb': 'navigation',
+        'badge': 'feedback'
+    };
+    return categories[componentName] || 'layout';
+}
+</script>
+
+{# Template functions for component examples #}
+{% set component_examples = {
+    'button': {'text': 'Click Me', 'variant': 'primary'},
+    'card': {'title': 'Sample Card', 'content': 'This is a sample card component with some content.'},
+    'alert': {'message': 'This is a sample alert message.', 'type': 'info'},
+    'badge': {'text': 'New', 'variant': 'primary'},
+    'form_field': {'name': 'sample', 'label': 'Sample Field', 'type': 'text', 'placeholder': 'Enter text...'},
+    'pagination': {'current_page': 2, 'total_pages': 5, 'base_url': '#'},
+    'breadcrumb': {'items': [{'text': 'Home', 'url': '#'}, {'text': 'Library', 'url': '#'}, {'text': 'Components'}]}
+} %}
+
+{% set component_descriptions = {
+    'button': 'Interactive button component with multiple variants and states.',
+    'card': 'Flexible content container with optional header and footer.',
+    'alert': 'Contextual feedback messages for user actions.',
+    'modal': 'Dialog overlay for focused content and interactions.',
+    'form_field': 'Comprehensive form input with validation and accessibility.',
+    'pagination': 'Navigation component for paginated content.',
+    'breadcrumb': 'Hierarchical navigation showing current page location.',
+    'badge': 'Small status indicators and labels.'
+} %}
+
+{# Helper functions #}
+{% macro get_component_category(component_name) %}
+{%- if component_name in ['button', 'form_field'] -%}form
+{%- elif component_name in ['pagination', 'breadcrumb'] -%}navigation
+{%- elif component_name in ['alert', 'modal', 'badge'] -%}feedback
+{%- else -%}layout{%- endif -%}
+{% endmacro %}
+
+{% macro get_component_description(component_name) %}
+{{ component_descriptions.get(component_name, 'Reusable UI component for consistent interface design.') }}
+{% endmacro %}
+
+{% macro render_component_example(component_name) %}
+{% set example_props = component_examples.get(component_name, {}) %}
+{{ render_component(component_name, **example_props) }}
+{% endmacro %}
+{% endblock %}

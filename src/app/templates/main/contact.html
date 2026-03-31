@@ -1,0 +1,324 @@
+{% extends "base/base.html" %}
+
+{% block title %}Contact Us - Fact Checker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-5">
+                    <i class="bi bi-envelope text-primary"></i> Contact Us
+                </h1>
+                <p class="lead text-muted">
+                    We'd love to hear from you! Get in touch with our team for support, feedback, or partnerships.
+                </p>
+            </div>
+
+            <!-- Contact Options -->
+            <div class="row mb-5">
+                <div class="col-md-4 text-center mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-question-circle text-info" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">General Support</h5>
+                            <p class="card-text">
+                                Questions about using the platform, account issues, or technical support.
+                            </p>
+                            <a href="mailto:support@factchecker.com" class="btn btn-outline-info">
+                                <i class="bi bi-envelope"></i> support@factchecker.com
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-newspaper text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Media & Press</h5>
+                            <p class="card-text">
+                                Media inquiries, press releases, interviews, and partnership opportunities.
+                            </p>
+                            <a href="mailto:media@factchecker.com" class="btn btn-outline-primary">
+                                <i class="bi bi-envelope"></i> media@factchecker.com
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-shield-exclamation text-warning" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Report Issues</h5>
+                            <p class="card-text">
+                                Report content violations, security issues, or abuse of platform guidelines.
+                            </p>
+                            <a href="mailto:report@factchecker.com" class="btn btn-outline-warning">
+                                <i class="bi bi-envelope"></i> report@factchecker.com
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">
+                        <i class="bi bi-chat-dots text-primary"></i> Send Us a Message
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form id="contactForm" method="POST" action="{{ url_for('main.contact') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject *</label>
+                            <select class="form-select" id="subject" name="subject" required>
+                                <option value="">Please select a subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="support">Technical Support</option>
+                                <option value="feedback">Feedback & Suggestions</option>
+                                <option value="partnership">Partnership Opportunity</option>
+                                <option value="media">Media Inquiry</option>
+                                <option value="report">Report an Issue</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message *</label>
+                            <textarea class="form-control" id="message" name="message" rows="6" 
+                                      placeholder="Please provide as much detail as possible..." required></textarea>
+                            <div class="form-text">Minimum 10 characters required.</div>
+                        </div>
+                        
+                        <!-- User Info (if logged in) -->
+                        {% if current_user and current_user.is_authenticated %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Note:</strong> This message will be sent from your registered account ({{ current_user.email }}).
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="privacy" name="privacy" required>
+                            <label class="form-check-label" for="privacy">
+                                I agree to the <a href="{{ url_for('main.guidelines') }}" target="_blank">Community Guidelines</a> 
+                                and understand that my message may be used to improve our services.
+                            </label>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">
+                        <i class="bi bi-question-circle text-info"></i> Frequently Asked Questions
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="faq1">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+                                    How do I report misinformation or inappropriate content?
+                                </button>
+                            </h3>
+                            <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="faq1" 
+                                 data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    You can report content directly on the platform using the report button available on facts and comments. 
+                                    For serious violations or if you need immediate assistance, email us at 
+                                    <a href="mailto:report@factchecker.com">report@factchecker.com</a>.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="faq2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+                                    How can I become a moderator or contribute more to the platform?
+                                </button>
+                            </h3>
+                            <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="faq2" 
+                                 data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Active community members who demonstrate good judgment and follow our guidelines may be 
+                                    invited to become moderators. Continue participating positively in the community, and 
+                                    reach out to us at <a href="mailto:support@factchecker.com">support@factchecker.com</a> 
+                                    to express your interest.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="faq3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+                                    Can I use Fact Checker data for research or journalism?
+                                </button>
+                            </h3>
+                            <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="faq3" 
+                                 data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    We support research and journalism that promotes truth and transparency. Please contact 
+                                    us at <a href="mailto:media@factchecker.com">media@factchecker.com</a> to discuss 
+                                    data access, attribution requirements, and collaboration opportunities.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="faq4">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+                                    How do you ensure the accuracy of fact-checking on your platform?
+                                </button>
+                            </h3>
+                            <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="faq4" 
+                                 data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Our community-driven approach relies on multiple verification layers: source requirements, 
+                                    community voting, moderation oversight, and continuous improvement based on feedback. 
+                                    Learn more about our methodology on our <a href="{{ url_for('main.about') }}">About page</a>.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h3 class="accordion-header" id="faq5">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                                    I'm having technical issues with the website. What should I do?
+                                </button>
+                            </h3>
+                            <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="faq5" 
+                                 data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    For technical issues, please email <a href="mailto:support@factchecker.com">support@factchecker.com</a> 
+                                    with details about the problem, including your browser type, device, and steps to reproduce the issue. 
+                                    We'll respond as quickly as possible.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Response Time -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">
+                        <i class="bi bi-clock text-success"></i> Response Times
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="bi bi-lightning text-warning" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Urgent Issues</h6>
+                            <p class="text-muted">Security, abuse, or critical bugs<br><strong>Within 2 hours</strong></p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="bi bi-headset text-primary" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">General Support</h6>
+                            <p class="text-muted">Account help, technical questions<br><strong>Within 24 hours</strong></p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="bi bi-chat-square-text text-info" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">General Inquiries</h6>
+                            <p class="text-muted">Feedback, partnerships, media<br><strong>Within 48 hours</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alternative Contact Methods -->
+            <div class="card mb-5">
+                <div class="card-header">
+                    <h2 class="h4 mb-0">
+                        <i class="bi bi-globe text-primary"></i> Other Ways to Connect
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <i class="bi bi-github text-dark" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Open Source</h6>
+                            <p class="small text-muted">Contribute to our codebase</p>
+                            <a href="#" class="btn btn-outline-dark btn-sm">GitHub</a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <i class="bi bi-twitter text-info" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Social Media</h6>
+                            <p class="small text-muted">Follow us for updates</p>
+                            <a href="#" class="btn btn-outline-info btn-sm">Twitter</a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <i class="bi bi-rss text-warning" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Blog & News</h6>
+                            <p class="small text-muted">Latest platform updates</p>
+                            <a href="#" class="btn btn-outline-warning btn-sm">Blog</a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <i class="bi bi-book text-success" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Documentation</h6>
+                            <p class="small text-muted">API and developer docs</p>
+                            <a href="#" class="btn btn-outline-success btn-sm">Docs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Navigation -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+                <a href="{{ url_for('main.about') }}" class="btn btn-outline-info">
+                    <i class="bi bi-info-circle"></i> Learn More About Us
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for form validation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('contactForm');
+    const messageField = document.getElementById('message');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const message = messageField.value.trim();
+            if (message.length < 10) {
+                e.preventDefault();
+                alert('Please provide a message with at least 10 characters.');
+                messageField.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

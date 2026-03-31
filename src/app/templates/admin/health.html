@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" rel="stylesheet">
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .health-overview {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .health-status-large {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .status-healthy {
+        color: #28a745;
+    }
+    
+    .status-warning {
+        color: #ffc107;
+    }
+    
+    .status-critical {
+        color: #dc3545;
+    }
+    
+    .status-unknown {
+        color: #6c757d;
+    }
+    
+    .health-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s;
+    }
+    
+    .health-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .health-check-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-left: 4px solid;
+    }
+    
+    .health-check-item.healthy {
+        border-left-color: #28a745;
+    }
+    
+    .health-check-item.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .health-check-item.critical {
+        border-left-color: #dc3545;
+    }
+    
+    .health-check-item.unknown {
+        border-left-color: #6c757d;
+    }
+    
+    .health-status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+    
+    .badge-healthy {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge-critical {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge-unknown {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+    
+    .auto-refresh {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .refresh-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .last-updated {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .health-details {
+        background: #f8f9fa;
+        border-radius: 5px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .response-time {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .history-item {
+        padding: 0.75rem;
+        border-left: 3px solid;
+        margin-bottom: 0.5rem;
+        background: white;
+        border-radius: 0 5px 5px 0;
+        font-size: 0.9rem;
+    }
+    
+    .history-item.healthy {
+        border-left-color: #28a745;
+    }
+    
+    .history-item.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .history-item.critical {
+        border-left-color: #dc3545;
+    }
+    
+    .loading-indicator {
+        display: none;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .loading-indicator.active {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>
+                    System Health Monitoring
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">Real-time system status and performance metrics</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light me-2" onclick="runHealthChecks()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Run Checks
+                </button>
+                <button class="btn btn-light" onclick="toggleAutoRefresh()">
+                    <i class="fas fa-clock me-1"></i>
+                    <span id="autoRefreshText">Enable Auto-Refresh</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Overall Health Status -->
+    <div class="health-overview">
+        <div class="health-status-large status-{{ health.overall_status|default('unknown') }}">
+            <i class="fas fa-{% if health.overall_status == 'healthy' %}check-circle{% elif health.overall_status == 'warning' %}exclamation-triangle{% elif health.overall_status == 'critical' %}times-circle{% else %}question-circle{% endif %}"></i>
+        </div>
+        <h2 class="mb-3">System Status: {{ health.overall_status|default('Unknown')|title }}</h2>
+        
+        {% if health.critical_issues %}
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Critical Issues</h5>
+            {% for issue in health.critical_issues %}
+            <div>• {{ issue }}</div>
+            {% endfor %}
+        </div>
+        {% elif health.warnings %}
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-circle me-2"></i>Warnings</h5>
+            {% for warning in health.warnings %}
+            <div>• {{ warning }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="auto-refresh">
+            <div class="last-updated">
+                Last updated: <span id="lastUpdated">{{ health.last_updated|default('Never') }}</span>
+            </div>
+            <div class="refresh-controls">
+                <div class="loading-indicator" id="loadingIndicator">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <span>Updating...</span>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="autoRefreshSwitch" onchange="toggleAutoRefresh()">
+                    <label class="form-check-label" for="autoRefreshSwitch">Auto-refresh (30s)</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- System Metrics -->
+        <div class="col-lg-4 mb-4">
+            <div class="health-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-server me-2"></i>
+                    System Resources
+                </h5>
+                
+                {% if metrics.system_resources and not metrics.system_resources.error %}
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value {% if metrics.system_resources.cpu_usage_percent > 80 %}text-danger{% elif metrics.system_resources.cpu_usage_percent > 60 %}text-warning{% else %}text-success{% endif %}">
+                                {{ "%.1f"|format(metrics.system_resources.cpu_usage_percent|default(0)) }}%
+                            </div>
+                            <div class="metric-label">CPU Usage</div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value {% if metrics.system_resources.memory_usage_percent > 80 %}text-danger{% elif metrics.system_resources.memory_usage_percent > 60 %}text-warning{% else %}text-success{% endif %}">
+                                {{ "%.1f"|format(metrics.system_resources.memory_usage_percent|default(0)) }}%
+                            </div>
+                            <div class="metric-label">Memory Usage</div>
+                            <small class="text-muted">
+                                {{ metrics.system_resources.memory_available_gb|default(0) }}GB / {{ metrics.system_resources.memory_total_gb|default(0) }}GB
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value {% if metrics.system_resources.disk_usage_percent > 85 %}text-danger{% elif metrics.system_resources.disk_usage_percent > 70 %}text-warning{% else %}text-success{% endif %}">
+                                {{ "%.1f"|format(metrics.system_resources.disk_usage_percent|default(0)) }}%
+                            </div>
+                            <div class="metric-label">Disk Usage</div>
+                            <small class="text-muted">
+                                {{ metrics.system_resources.disk_free_gb|default(0) }}GB free
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {{ metrics.system_resources.error|default('System resource monitoring unavailable') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Health Checks -->
+        <div class="col-lg-8 mb-4">
+            <div class="health-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-list-check me-2"></i>
+                    Health Checks
+                </h5>
+                
+                {% if health.checks %}
+                <div id="healthChecks">
+                    {% for check_name, check_data in health.checks.items() %}
+                    <div class="health-check-item {{ check_data.status }}">
+                        <div>
+                            <strong>{{ check_name|title|replace('_', ' ') }}</strong>
+                            <div class="text-muted small">{{ check_data.message }}</div>
+                            {% if check_data.response_time_ms %}
+                            <div class="response-time">Response time: {{ check_data.response_time_ms }}ms</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="health-status-badge badge-{{ check_data.status }}">
+                                {{ check_data.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if check_data.details %}
+                    <div class="health-details">
+                        {% for key, value in check_data.details.items() %}
+                        <div><strong>{{ key|title|replace('_', ' ') }}:</strong> {{ value }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-heartbeat fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No health check data available</h5>
+                    <button class="btn btn-primary" onclick="runHealthChecks()">
+                        <i class="fas fa-play me-1"></i>
+                        Run Health Checks
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Application Metrics -->
+        <div class="col-lg-6 mb-4">
+            <div class="health-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Application Metrics
+                </h5>
+                
+                {% if metrics.application_metrics %}
+                <div class="row">
+                    {% if metrics.application_metrics.recent_activity %}
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <div class="metric-value text-info">
+                                {{ metrics.application_metrics.recent_activity.active_users_last_hour|default(0) }}
+                            </div>
+                            <div class="metric-label">Active Users (1h)</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <div class="metric-value text-success">
+                                {{ metrics.application_metrics.recent_activity.content_created_last_hour|default(0) }}
+                            </div>
+                            <div class="metric-label">New Content (1h)</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if metrics.database_metrics %}
+                <h6 class="mt-3 mb-2">Database Statistics</h6>
+                <div class="row">
+                    {% if metrics.database_metrics.table_counts %}
+                    <div class="col-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-primary">
+                                {{ metrics.database_metrics.table_counts.users|default(0) }}
+                            </div>
+                            <div class="metric-label">Users</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-success">
+                                {{ metrics.database_metrics.table_counts.facts|default(0) }}
+                            </div>
+                            <div class="metric-label">Facts</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-info">
+                                {{ metrics.database_metrics.table_counts.comments|default(0) }}
+                            </div>
+                            <div class="metric-label">Comments</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-warning">
+                                {{ metrics.database_metrics.table_counts.reports|default(0) }}
+                            </div>
+                            <div class="metric-label">Reports</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted">No application metrics available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Health History -->
+        <div class="col-lg-6 mb-4">
+            <div class="health-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Health History
+                    </h5>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="filterHistory(this.value)">
+                        <option value="">All Checks</option>
+                        <option value="database">Database</option>
+                        <option value="memory">Memory</option>
+                        <option value="disk">Disk</option>
+                        <option value="cpu">CPU</option>
+                        <option value="application">Application</option>
+                    </select>
+                </div>
+                
+                <div id="healthHistory" style="max-height: 400px; overflow-y: auto;">
+                    {% if history %}
+                    {% for record in history[:20] %}
+                    <div class="history-item {{ record.status }}" data-check="{{ record.check_name }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ record.check_name|title|replace('_', ' ') }}</strong>
+                                <div class="text-muted">{{ record.message }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge badge-{{ record.status }}">{{ record.status|title }}</span>
+                                <div class="small text-muted">{{ moment(record.last_check_at).fromNow() }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">No health history available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Trends Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="health-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Health Trends (Last 24 Hours)
+                </h5>
+                <div class="chart-container">
+                    <canvas id="healthTrendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+let autoRefreshInterval;
+let isAutoRefreshEnabled = false;
+
+// Health Trends Chart
+const trendsCtx = document.getElementById('healthTrendsChart').getContext('2d');
+const healthTrendsChart = new Chart(trendsCtx, {
+    type: 'line',
+    data: {
+        labels: [], // Will be populated with timestamps
+        datasets: [{
+            label: 'Healthy Checks',
+            data: [],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Warning Checks',
+            data: [],
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Critical Checks',
+            data: [],
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            },
+            x: {
+                type: 'time',
+                time: {
+                    unit: 'hour',
+                    displayFormats: {
+                        hour: 'HH:mm'
+                    }
+                }
+            }
+        }
+    }
+});
+
+function runHealthChecks() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    loadingIndicator.classList.add('active');
+    
+    fetch('{{ url_for("admin.api_run_health_checks") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingIndicator.classList.remove('active');
+        updateHealthDisplay(data);
+        updateLastUpdated();
+    })
+    .catch(error => {
+        loadingIndicator.classList.remove('active');
+        console.error('Error running health checks:', error);
+        alert('Error running health checks. Please try again.');
+    });
+}
+
+function updateHealthDisplay(healthData) {
+    // Update overall status
+    const statusElements = document.querySelectorAll('.status-healthy, .status-warning, .status-critical, .status-unknown');
+    statusElements.forEach(el => {
+        el.className = el.className.replace(/status-\w+/, `status-${healthData.overall_status}`);
+    });
+    
+    // Update health checks
+    const healthChecksContainer = document.getElementById('healthChecks');
+    if (healthChecksContainer && healthData.checks) {
+        let checksHtml = '';
+        
+        for (const [checkName, checkData] of Object.entries(healthData.checks)) {
+            checksHtml += `
+                <div class="health-check-item ${checkData.status}">
+                    <div>
+                        <strong>${checkName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>
+                        <div class="text-muted small">${checkData.message}</div>
+                        ${checkData.response_time_ms ? `<div class="response-time">Response time: ${checkData.response_time_ms}ms</div>` : ''}
+                    </div>
+                    <div>
+                        <span class="health-status-badge badge-${checkData.status}">
+                            ${checkData.status.charAt(0).toUpperCase() + checkData.status.slice(1)}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            if (checkData.details) {
+                checksHtml += '<div class="health-details">';
+                for (const [key, value] of Object.entries(checkData.details)) {
+                    checksHtml += `<div><strong>${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${value}</div>`;
+                }
+                checksHtml += '</div>';
+            }
+        }
+        
+        healthChecksContainer.innerHTML = checksHtml;
+    }
+}
+
+function toggleAutoRefresh() {
+    const switchElement = document.getElementById('autoRefreshSwitch');
+    const textElement = document.getElementById('autoRefreshText');
+    
+    isAutoRefreshEnabled = !isAutoRefreshEnabled;
+    switchElement.checked = isAutoRefreshEnabled;
+    
+    if (isAutoRefreshEnabled) {
+        textElement.textContent = 'Disable Auto-Refresh';
+        autoRefreshInterval = setInterval(() => {
+            runHealthChecks();
+        }, 30000); // 30 seconds
+    } else {
+        textElement.textContent = 'Enable Auto-Refresh';
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+    }
+}
+
+function updateLastUpdated() {
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        lastUpdatedElement.textContent = moment().format('YYYY-MM-DD HH:mm:ss');
+    }
+}
+
+function filterHistory(checkName) {
+    const historyItems = document.querySelectorAll('#healthHistory .history-item');
+    
+    historyItems.forEach(item => {
+        if (!checkName || item.dataset.check === checkName) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function loadHealthHistory() {
+    fetch('{{ url_for("admin.api_health_history") }}?hours=24')
+    .then(response => response.json())
+    .then(data => {
+        if (data.history) {
+            updateHealthTrendsChart(data.history);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading health history:', error);
+    });
+}
+
+function updateHealthTrendsChart(historyData) {
+    // Group data by hour and status
+    const hourlyData = {};
+    
+    historyData.forEach(record => {
+        const hour = moment(record.last_check_at).format('YYYY-MM-DD HH:00');
+        
+        if (!hourlyData[hour]) {
+            hourlyData[hour] = { healthy: 0, warning: 0, critical: 0 };
+        }
+        
+        hourlyData[hour][record.status] = (hourlyData[hour][record.status] || 0) + 1;
+    });
+    
+    // Convert to chart data
+    const labels = Object.keys(hourlyData).sort();
+    const healthyData = labels.map(label => hourlyData[label].healthy || 0);
+    const warningData = labels.map(label => hourlyData[label].warning || 0);
+    const criticalData = labels.map(label => hourlyData[label].critical || 0);
+    
+    healthTrendsChart.data.labels = labels;
+    healthTrendsChart.data.datasets[0].data = healthyData;
+    healthTrendsChart.data.datasets[1].data = warningData;
+    healthTrendsChart.data.datasets[2].data = criticalData;
+    healthTrendsChart.update();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadHealthHistory();
+    updateLastUpdated();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
+</script>
+{% endblock %}

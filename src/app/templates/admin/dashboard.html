@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ config.SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" rel="stylesheet">
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+        border-left: 4px solid #667eea;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .metric-change {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+    }
+    
+    .metric-change.positive {
+        color: #27ae60;
+    }
+    
+    .metric-change.negative {
+        color: #e74c3c;
+    }
+    
+    .health-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+    
+    .health-healthy {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .health-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .health-critical {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .health-unknown {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-left: 3px solid #e9ecef;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .activity-item.severity-high {
+        border-left-color: #dc3545;
+    }
+    
+    .activity-item.severity-medium {
+        border-left-color: #ffc107;
+    }
+    
+    .activity-item.severity-low {
+        border-left-color: #28a745;
+    }
+    
+    .alert-item {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border-left: 4px solid;
+    }
+    
+    .alert-critical {
+        background-color: #f8d7da;
+        border-left-color: #dc3545;
+        color: #721c24;
+    }
+    
+    .alert-warning {
+        background-color: #fff3cd;
+        border-left-color: #ffc107;
+        color: #856404;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+    
+    .refresh-indicator {
+        display: none;
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .refresh-indicator.active {
+        display: inline-block;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .quick-action-btn {
+        display: block;
+        width: 100%;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        text-align: left;
+        border: 1px solid #e9ecef;
+        background: white;
+        border-radius: 5px;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: #495057;
+    }
+    
+    .quick-action-btn:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        color: #667eea;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Admin Dashboard
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">System overview and management</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Refresh
+                </button>
+                <span class="refresh-indicator ms-2" id="refreshIndicator">
+                    <i class="fas fa-spinner fa-spin me-1"></i>
+                    Updating...
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- System Health Alert -->
+    {% if health.overall_status == 'critical' or health.critical_issues %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Critical System Issues</h5>
+                {% for issue in health.critical_issues %}
+                <div>• {{ issue }}</div>
+                {% endfor %}
+                <a href="{{ url_for('admin.health') }}" class="btn btn-outline-danger btn-sm mt-2">
+                    View Health Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% elif health.overall_status == 'warning' or health.warnings %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-circle me-2"></i>System Warnings</h5>
+                {% for warning in health.warnings %}
+                <div>• {{ warning }}</div>
+                {% endfor %}
+                <a href="{{ url_for('admin.health') }}" class="btn btn-outline-warning btn-sm mt-2">
+                    View Health Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ overview.overview.total_users|default(0) }}</div>
+                <div class="metric-label">Total Users</div>
+                {% if overview.overview.new_users_today %}
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +{{ overview.overview.new_users_today }} today
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ overview.overview.total_facts|default(0) }}</div>
+                <div class="metric-label">Total Facts</div>
+                {% if overview.overview.new_facts_today %}
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +{{ overview.overview.new_facts_today }} today
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ overview.overview.total_comments|default(0) }}</div>
+                <div class="metric-label">Total Comments</div>
+                {% if overview.overview.new_comments_today %}
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +{{ overview.overview.new_comments_today }} today
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ overview.moderation.pending_reports|default(0) }}</div>
+                <div class="metric-label">Pending Reports</div>
+                {% if overview.moderation.reports_today %}
+                <div class="metric-change {% if overview.moderation.reports_today > 10 %}negative{% else %}positive{% endif %}">
+                    <i class="fas fa-{% if overview.moderation.reports_today > 10 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
+                    {{ overview.moderation.reports_today }} today
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- System Health Status -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat me-2"></i>
+                        System Health
+                    </h5>
+                    <span class="health-status health-{{ health.overall_status|default('unknown') }}">
+                        {{ health.overall_status|default('Unknown')|title }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if health.checks %}
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="text-success h4">{{ health.system_health.healthy_checks|default(0) }}</div>
+                            <small class="text-muted">Healthy</small>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="text-warning h4">{{ health.system_health.warning_checks|default(0) }}</div>
+                            <small class="text-muted">Warning</small>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="text-danger h4">{{ health.system_health.critical_checks|default(0) }}</div>
+                            <small class="text-muted">Critical</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No health data available</p>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('admin.health') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-chart-line me-1"></i>
+                            View Details
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" onclick="runHealthChecks()">
+                            <i class="fas fa-sync me-1"></i>
+                            Run Checks
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Growth Metrics Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Growth Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Admin Activities -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Activities
+                    </h5>
+                    <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if overview.recent_activities %}
+                    <div class="activity-timeline">
+                        {% for activity in overview.recent_activities[:5] %}
+                        <div class="activity-item severity-{{ activity.severity }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ activity.admin_username }}</strong>
+                                    <span class="text-muted">{{ activity.action }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    {{ moment(activity.created_at).fromNow() }}
+                                </small>
+                            </div>
+                            <div class="mt-1 text-muted small">
+                                {{ activity.description }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent activities</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <a href="{{ url_for('admin.users') }}" class="quick-action-btn">
+                            <i class="fas fa-users me-2"></i>
+                            Manage Users
+                            <small class="text-muted d-block">Search, edit, and moderate users</small>
+                        </a>
+                        
+                        <a href="{{ url_for('admin.configuration') }}" class="quick-action-btn">
+                            <i class="fas fa-cogs me-2"></i>
+                            System Configuration
+                            <small class="text-muted d-block">Manage application settings</small>
+                        </a>
+                        
+                        <a href="{{ url_for('moderation.dashboard') }}" class="quick-action-btn">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Moderation Queue
+                            <small class="text-muted d-block">{{ overview.moderation.pending_reports|default(0) }} pending reports</small>
+                        </a>
+                        
+                        <a href="{{ url_for('admin.health') }}" class="quick-action-btn">
+                            <i class="fas fa-heartbeat me-2"></i>
+                            System Health
+                            <small class="text-muted d-block">Monitor system performance</small>
+                        </a>
+                        
+                        <a href="{{ url_for('analytics.admin_dashboard') }}" class="quick-action-btn">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Analytics Dashboard
+                            <small class="text-muted d-block">View detailed analytics</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Alerts -->
+    {% if overview.system_alerts %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        System Alerts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for alert in overview.system_alerts %}
+                    <div class="alert-item alert-{{ alert.severity }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ alert.message }}</strong>
+                                {% if alert.details %}
+                                <div class="mt-1 small">{{ alert.details }}</div>
+                                {% endif %}
+                            </div>
+                            <span class="badge bg-{{ 'danger' if alert.severity == 'critical' else 'warning' }}">
+                                {{ alert.type|title }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+// Growth Chart
+const growthCtx = document.getElementById('growthChart').getContext('2d');
+const growthChart = new Chart(growthCtx, {
+    type: 'line',
+    data: {
+        labels: ['Previous Week', 'Current Week'],
+        datasets: [{
+            label: 'New Users',
+            data: [
+                {{ overview.growth_metrics.user_growth.previous|default(0) }},
+                {{ overview.growth_metrics.user_growth.current|default(0) }}
+            ],
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'New Facts',
+            data: [
+                {{ overview.growth_metrics.fact_growth.previous|default(0) }},
+                {{ overview.growth_metrics.fact_growth.current|default(0) }}
+            ],
+            borderColor: '#764ba2',
+            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Auto-refresh functionality
+let refreshInterval;
+
+function refreshDashboard() {
+    const indicator = document.getElementById('refreshIndicator');
+    indicator.classList.add('active');
+    
+    fetch('{{ url_for("admin.api_overview") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Update metrics
+            updateMetrics(data);
+            indicator.classList.remove('active');
+        })
+        .catch(error => {
+            console.error('Error refreshing dashboard:', error);
+            indicator.classList.remove('active');
+        });
+}
+
+function updateMetrics(data) {
+    // Update metric values
+    const metrics = document.querySelectorAll('.metric-value');
+    if (data.overview) {
+        if (metrics[0]) metrics[0].textContent = data.overview.total_users || 0;
+        if (metrics[1]) metrics[1].textContent = data.overview.total_facts || 0;
+        if (metrics[2]) metrics[2].textContent = data.overview.total_comments || 0;
+    }
+    if (data.moderation && metrics[3]) {
+        metrics[3].textContent = data.moderation.pending_reports || 0;
+    }
+}
+
+function runHealthChecks() {
+    fetch('{{ url_for("admin.api_run_health_checks") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Refresh the page to show updated health status
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error running health checks:', error);
+        alert('Error running health checks. Please try again.');
+    });
+}
+
+// Start auto-refresh every 30 seconds
+refreshInterval = setInterval(refreshDashboard, 30000);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

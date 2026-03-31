@@ -1,0 +1,324 @@
+{% extends "base/base.html" %}
+
+{% block title %}Style Guide - UI Framework{% endblock %}
+
+{% block extra_css %}
+<style>
+    .style-guide {
+        padding: 2rem 0;
+    }
+    
+    .section {
+        margin-bottom: 4rem;
+    }
+    
+    .section-header {
+        border-bottom: 2px solid var(--color-primary, #007bff);
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .color-palette {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .color-swatch {
+        text-align: center;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .color-display {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .color-info {
+        background: white;
+        padding: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .color-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .color-value {
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .typography-example {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+    }
+    
+    .component-example {
+        margin-bottom: 2rem;
+        padding: 2rem;
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+        background: #f8f9fa;
+    }
+    
+    .example-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .spacing-demo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .spacing-box {
+        background: var(--color-primary, #007bff);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="style-guide">
+    <div class="text-center mb-5">
+        <h1 class="display-3 mb-3">Style Guide</h1>
+        <p class="lead text-muted">
+            Complete design system documentation for the Fact Checker application.
+            This guide showcases our design tokens, components, and usage guidelines.
+        </p>
+    </div>
+    
+    <!-- Colors Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-palette me-2"></i>Color Palette</h2>
+            <p class="text-muted mb-0">Our carefully selected color scheme ensures accessibility and visual hierarchy.</p>
+        </div>
+        
+        <div class="color-palette">
+            {% for color_name, color_value in theme_config.colors.items() %}
+            <div class="color-swatch">
+                <div class="color-display" style="background-color: {{ color_value }}">
+                    {{ color_name | title }}
+                </div>
+                <div class="color-info">
+                    <div class="color-name">{{ color_name | title }}</div>
+                    <div class="color-value">{{ color_value }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <!-- Typography Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-font me-2"></i>Typography</h2>
+            <p class="text-muted mb-0">Consistent typography creates hierarchy and improves readability.</p>
+        </div>
+        
+        <div class="typography-example">
+            <h1>Heading 1 - {{ theme_config.typography.headings.h1 }}</h1>
+            <h2>Heading 2 - {{ theme_config.typography.headings.h2 }}</h2>
+            <h3>Heading 3 - {{ theme_config.typography.headings.h3 }}</h3>
+            <h4>Heading 4 - {{ theme_config.typography.headings.h4 }}</h4>
+            <h5>Heading 5 - {{ theme_config.typography.headings.h5 }}</h5>
+            <h6>Heading 6 - {{ theme_config.typography.headings.h6 }}</h6>
+            
+            <p class="mt-4">
+                <strong>Body text:</strong> This is regular body text using our base font family: {{ theme_config.typography.font_family }}.
+                The base font size is {{ theme_config.typography.font_size_base }} with a line height of {{ theme_config.typography.line_height }}.
+            </p>
+            
+            <p class="text-muted">
+                <em>Muted text:</em> Used for secondary information and descriptions.
+            </p>
+        </div>
+    </section>
+    
+    <!-- Spacing Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-expand-arrows-alt me-2"></i>Spacing System</h2>
+            <p class="text-muted mb-0">Consistent spacing creates visual rhythm and improves layout.</p>
+        </div>
+        
+        <div class="spacing-demo">
+            {% for size_name, size_value in theme_config.spacing.items() %}
+            <div class="spacing-box" style="padding: {{ size_value }};">
+                {{ size_name }}: {{ size_value }}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <!-- Components Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-cubes me-2"></i>UI Components</h2>
+            <p class="text-muted mb-0">Reusable components ensure consistency across the application.</p>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="component-example">
+            <div class="example-title">Buttons</div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                {{ render_component('button', text='Primary', variant='primary') | safe }}
+                {{ render_component('button', text='Secondary', variant='secondary') | safe }}
+                {{ render_component('button', text='Success', variant='success') | safe }}
+                {{ render_component('button', text='Danger', variant='danger') | safe }}
+                {{ render_component('button', text='Warning', variant='warning') | safe }}
+                {{ render_component('button', text='Info', variant='info') | safe }}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {{ render_component('button', text='Small', variant='primary', size='sm') | safe }}
+                {{ render_component('button', text='Medium', variant='primary', size='md') | safe }}
+                {{ render_component('button', text='Large', variant='primary', size='lg') | safe }}
+                {{ render_component('button', text='Disabled', variant='primary', disabled=true) | safe }}
+            </div>
+        </div>
+        
+        <!-- Alerts -->
+        <div class="component-example">
+            <div class="example-title">Alerts</div>
+            {{ render_component('alert', message='This is a success alert with an icon.', type='success', icon=true) | safe }}
+            {{ render_component('alert', message='This is an info alert that can be dismissed.', type='info', dismissible=true) | safe }}
+            {{ render_component('alert', message='This is a warning alert without an icon.', type='warning', icon=false) | safe }}
+            {{ render_component('alert', message='This is a danger alert for errors.', type='danger') | safe }}
+        </div>
+        
+        <!-- Cards -->
+        <div class="component-example">
+            <div class="example-title">Cards</div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ render_component('card', 
+                        title='Basic Card', 
+                        content='This is a basic card with a title and content. Cards are flexible containers for grouping related information.',
+                        variant='default'
+                    ) | safe }}
+                </div>
+                <div class="col-md-6">
+                    {{ render_component('card', 
+                        title='Card with Footer', 
+                        content='This card includes a footer section for additional actions or information.',
+                        footer='<button class="btn btn-primary btn-sm">Action</button>',
+                        variant='primary'
+                    ) | safe }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Badges -->
+        <div class="component-example">
+            <div class="example-title">Badges</div>
+            <div class="d-flex flex-wrap gap-2">
+                {{ render_component('badge', text='New', variant='primary') | safe }}
+                {{ render_component('badge', text='Updated', variant='success') | safe }}
+                {{ render_component('badge', text='Warning', variant='warning') | safe }}
+                {{ render_component('badge', text='Error', variant='danger') | safe }}
+                {{ render_component('badge', text='Pill Badge', variant='info', pill=true) | safe }}
+            </div>
+        </div>
+        
+        <!-- Form Fields -->
+        <div class="component-example">
+            <div class="example-title">Form Fields</div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ render_component('form_field', 
+                        name='example_text', 
+                        label='Text Input', 
+                        type='text',
+                        placeholder='Enter some text...',
+                        help_text='This is helpful information about the field.'
+                    ) | safe }}
+                </div>
+                <div class="col-md-6">
+                    {{ render_component('form_field', 
+                        name='example_select', 
+                        label='Select Field', 
+                        type='select',
+                        options=[
+                            {'value': 'option1', 'text': 'Option 1'},
+                            {'value': 'option2', 'text': 'Option 2'},
+                            {'value': 'option3', 'text': 'Option 3'}
+                        ],
+                        required=true
+                    ) | safe }}
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Responsive Grid -->
+    <section class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-th me-2"></i>Responsive Grid</h2>
+            <p class="text-muted mb-0">Flexible grid system for responsive layouts.</p>
+        </div>
+        
+        <div class="component-example">
+            <div class="example-title">12-Column Grid</div>
+            <div class="row mb-3">
+                <div class="col-12"><div class="bg-primary text-white p-2 text-center">col-12</div></div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-6"><div class="bg-secondary text-white p-2 text-center">col-6</div></div>
+                <div class="col-6"><div class="bg-secondary text-white p-2 text-center">col-6</div></div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-4"><div class="bg-info text-white p-2 text-center">col-4</div></div>
+                <div class="col-4"><div class="bg-info text-white p-2 text-center">col-4</div></div>
+                <div class="col-4"><div class="bg-info text-white p-2 text-center">col-4</div></div>
+            </div>
+            <div class="row">
+                <div class="col-3"><div class="bg-success text-white p-2 text-center">col-3</div></div>
+                <div class="col-3"><div class="bg-success text-white p-2 text-center">col-3</div></div>
+                <div class="col-3"><div class="bg-success text-white p-2 text-center">col-3</div></div>
+                <div class="col-3"><div class="bg-success text-white p-2 text-center">col-3</div></div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Actions -->
+    <div class="text-center mt-5">
+        <h3>Explore More</h3>
+        <p class="text-muted mb-4">
+            Dive deeper into our component library and interactive tools.
+        </p>
+        
+        <a href="{{ url_for('ui.component_showcase') }}" class="btn btn-primary btn-lg me-3">
+            <i class="fas fa-cubes me-2"></i>Component Library
+        </a>
+        <a href="{{ url_for('ui.playground') }}" class="btn btn-outline-primary btn-lg me-3">
+            <i class="fas fa-play me-2"></i>Interactive Playground
+        </a>
+        <a href="{{ url_for('ui.theme_selector') }}" class="btn btn-outline-secondary btn-lg">
+            <i class="fas fa-palette me-2"></i>Change Theme
+        </a>
+    </div>
+</div>
+{% endblock %}

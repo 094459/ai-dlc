@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .search-filters {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .user-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .user-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .status-suspended {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-banned {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .role-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .role-admin {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .role-moderator {
+        background-color: #fd7e14;
+        color: white;
+    }
+    
+    .role-user {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .bulk-actions {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    
+    .bulk-actions.active {
+        display: block;
+    }
+    
+    .summary-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .summary-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .user-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    
+    .loading-spinner {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    User Management
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">Manage user accounts and permissions</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light" onclick="exportUsers()">
+                    <i class="fas fa-download me-1"></i>
+                    Export Users
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- User Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-number">{{ summary.user_counts.active|default(0) }}</div>
+                <div class="summary-label">Active Users</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-number">{{ summary.user_counts.suspended|default(0) }}</div>
+                <div class="summary-label">Suspended</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-number">{{ summary.user_counts.banned|default(0) }}</div>
+                <div class="summary-label">Banned</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card">
+                <div class="summary-number">{{ summary.user_counts.total|default(0) }}</div>
+                <div class="summary-label">Total Users</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+        <form method="GET" id="searchForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Users</label>
+                    <input type="text" class="form-control" id="search" name="q" 
+                           value="{{ query }}" placeholder="Username, email, or name...">
+                </div>
+                <div class="col-md-2">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">All Roles</option>
+                        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="moderator" {% if role_filter == 'moderator' %}selected{% endif %}>Moderator</option>
+                        <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                        <option value="banned" {% if status_filter == 'banned' %}selected{% endif %}>Banned</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="per_page" class="form-label">Per Page</label>
+                    <select class="form-select" id="per_page" name="per_page">
+                        <option value="20" {% if request.args.get('per_page', '20') == '20' %}selected{% endif %}>20</option>
+                        <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>
+                        Search
+                    </button>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulkActions">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <span id="selectedCount">0</span> users selected
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-warning btn-sm" onclick="bulkSuspend()">
+                    <i class="fas fa-pause me-1"></i>
+                    Suspend Selected
+                </button>
+                <button class="btn btn-success btn-sm" onclick="bulkActivate()">
+                    <i class="fas fa-play me-1"></i>
+                    Activate Selected
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                    <i class="fas fa-times me-1"></i>
+                    Clear Selection
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users List -->
+    <div class="row">
+        {% if users %}
+        {% for user in users %}
+        <div class="col-12">
+            <div class="user-card">
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <input type="checkbox" class="form-check-input user-checkbox" 
+                               value="{{ user.id }}" onchange="updateBulkActions()">
+                    </div>
+                    <div class="col-md-1">
+                        <div class="user-avatar">
+                            {{ user.username[0]|upper }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div>
+                            <strong>{{ user.username }}</strong>
+                            <span class="role-badge role-{{ user.role }}">{{ user.role|title }}</span>
+                        </div>
+                        <div class="text-muted small">
+                            {{ user.first_name }} {{ user.last_name }}
+                        </div>
+                        <div class="text-muted small">
+                            {{ user.email }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="user-status status-{% if user.is_banned %}banned{% elif user.is_suspended %}suspended{% elif user.is_active %}active{% else %}inactive{% endif %}">
+                            {% if user.is_banned %}Banned{% elif user.is_suspended %}Suspended{% elif user.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="small text-muted">
+                            Joined: {{ moment(user.created_at).format('MMM DD, YYYY') }}
+                        </div>
+                        {% if user.last_login %}
+                        <div class="small text-muted">
+                            Last login: {{ moment(user.last_login).fromNow() }}
+                        </div>
+                        {% else %}
+                        <div class="small text-muted">Never logged in</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <div class="user-actions">
+                            <a href="{{ url_for('admin.user_details', user_id=user.id) }}" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>
+                                View
+                            </a>
+                            {% if user.role != 'admin' %}
+                            {% if user.is_suspended %}
+                            <button class="btn btn-outline-success btn-sm" 
+                                    onclick="activateUser('{{ user.id }}', '{{ user.username }}')">
+                                <i class="fas fa-play me-1"></i>
+                                Activate
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-warning btn-sm" 
+                                    onclick="suspendUser('{{ user.id }}', '{{ user.username }}')">
+                                <i class="fas fa-pause me-1"></i>
+                                Suspend
+                            </button>
+                            {% endif %}
+                            {% if not user.is_banned %}
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="banUser('{{ user.id }}', '{{ user.username }}')">
+                                <i class="fas fa-ban me-1"></i>
+                                Ban
+                            </button>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No users found</h4>
+                <p class="text-muted">Try adjusting your search criteria</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="User pagination">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.users', page=pagination.page-1, q=query, role=role_filter, status=status_filter, per_page=request.args.get('per_page', 20)) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, pagination.pages + 1) %}
+                    {% if page_num == pagination.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% elif page_num <= 3 or page_num > pagination.pages - 3 or (page_num >= pagination.page - 1 and page_num <= pagination.page + 1) %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.users', page=page_num, q=query, role=role_filter, status=status_filter, per_page=request.args.get('per_page', 20)) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% elif page_num == 4 or page_num == pagination.pages - 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.users', page=pagination.page+1, q=query, role=role_filter, status=status_filter, per_page=request.args.get('per_page', 20)) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <div class="text-center text-muted">
+                Showing {{ ((pagination.page - 1) * request.args.get('per_page', 20)|int) + 1 }} to 
+                {{ pagination.page * request.args.get('per_page', 20)|int if pagination.page * request.args.get('per_page', 20)|int < pagination.total else pagination.total }} 
+                of {{ pagination.total }} users
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div>Processing request...</div>
+    </div>
+</div>
+
+<!-- Bulk Suspend Modal -->
+<div class="modal fade" id="bulkSuspendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Suspend Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkSuspendForm">
+                    <div class="mb-3">
+                        <label for="suspendReason" class="form-label">Reason for suspension</label>
+                        <textarea class="form-control" id="suspendReason" rows="3" required
+                                  placeholder="Enter reason for suspension..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="suspendDuration" class="form-label">Duration (hours)</label>
+                        <select class="form-select" id="suspendDuration" required>
+                            <option value="24">24 hours</option>
+                            <option value="72">3 days</option>
+                            <option value="168">1 week</option>
+                            <option value="720">30 days</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This will suspend <span id="suspendCount">0</span> selected users.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="confirmBulkSuspend()">
+                    <i class="fas fa-pause me-1"></i>
+                    Suspend Users
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+let selectedUsers = [];
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    selectedUsers = Array.from(checkboxes).map(cb => cb.value);
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedUsers.length > 0) {
+        bulkActions.classList.add('active');
+        selectedCount.textContent = selectedUsers.length;
+    } else {
+        bulkActions.classList.remove('active');
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+    updateBulkActions();
+}
+
+function bulkSuspend() {
+    if (selectedUsers.length === 0) return;
+    
+    document.getElementById('suspendCount').textContent = selectedUsers.length;
+    new bootstrap.Modal(document.getElementById('bulkSuspendModal')).show();
+}
+
+function confirmBulkSuspend() {
+    const reason = document.getElementById('suspendReason').value;
+    const duration = document.getElementById('suspendDuration').value;
+    
+    if (!reason.trim()) {
+        alert('Please enter a reason for suspension');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_bulk_suspend_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: selectedUsers,
+            reason: reason,
+            duration_hours: parseInt(duration)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        bootstrap.Modal.getInstance(document.getElementById('bulkSuspendModal')).hide();
+        
+        if (data.success) {
+            alert(`Successfully suspended ${data.suspended_count} users`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while suspending users');
+    });
+}
+
+function bulkActivate() {
+    if (selectedUsers.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to activate ${selectedUsers.length} selected users?`)) {
+        return;
+    }
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_bulk_update_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: selectedUsers,
+            updates: {
+                is_active: true,
+                is_suspended: false
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            alert(`Successfully activated ${data.updated_count} users`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while activating users');
+    });
+}
+
+function suspendUser(userId, username) {
+    const reason = prompt(`Enter reason for suspending ${username}:`);
+    if (!reason) return;
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_bulk_suspend_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            reason: reason,
+            duration_hours: 24
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            alert(`Successfully suspended ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while suspending user');
+    });
+}
+
+function activateUser(userId, username) {
+    if (!confirm(`Are you sure you want to activate ${username}?`)) return;
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_bulk_update_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            updates: {
+                is_active: true,
+                is_suspended: false
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            alert(`Successfully activated ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while activating user');
+    });
+}
+
+function banUser(userId, username) {
+    const reason = prompt(`Enter reason for banning ${username}:`);
+    if (!reason) return;
+    
+    if (!confirm(`Are you sure you want to permanently ban ${username}? This action cannot be undone.`)) return;
+    
+    showLoading();
+    
+    fetch('{{ url_for("admin.api_bulk_update_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            updates: {
+                is_banned: true,
+                is_active: false
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            alert(`Successfully banned ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while banning user');
+    });
+}
+
+function exportUsers() {
+    const params = new URLSearchParams(window.location.search);
+    const exportUrl = '{{ url_for("admin.api_export_users") }}?' + params.toString();
+    
+    showLoading();
+    
+    fetch(exportUrl)
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.data) {
+            // Create and download CSV
+            const csv = convertToCSV(data.data);
+            downloadCSV(csv, `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+        } else {
+            alert('Error exporting users: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        alert('An error occurred while exporting users');
+    });
+}
+
+function convertToCSV(data) {
+    if (!data.length) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
+    
+    return csvContent;
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Auto-submit search form on filter change
+document.getElementById('role').addEventListener('change', function() {
+    document.getElementById('searchForm').submit();
+});
+
+document.getElementById('status').addEventListener('change', function() {
+    document.getElementById('searchForm').submit();
+});
+
+document.getElementById('per_page').addEventListener('change', function() {
+    document.getElementById('searchForm').submit();
+});
+</script>
+{% endblock %}

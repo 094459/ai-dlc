@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+
+{% block title %}Moderator Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moderator-dashboard {
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 300;
+    }
+    
+    .dashboard-header p {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .moderation-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #28a745;
+        transition: transform 0.2s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-card.pending {
+        border-left-color: #ffc107;
+    }
+    
+    .stat-card.resolved {
+        border-left-color: #28a745;
+    }
+    
+    .stat-card.escalated {
+        border-left-color: #dc3545;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .priority-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .priority-high {
+        background-color: #dc3545;
+    }
+    
+    .priority-medium {
+        background-color: #ffc107;
+    }
+    
+    .priority-low {
+        background-color: #28a745;
+    }
+    
+    .reports-queue {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .queue-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .queue-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .queue-filters {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .report-item {
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        transition: all 0.2s ease;
+    }
+    
+    .report-item:hover {
+        border-color: #007bff;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+    }
+    
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .report-type {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .report-time {
+        color: #999;
+        font-size: 0.8rem;
+    }
+    
+    .report-content {
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .report-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .action-btn {
+        padding: 5px 15px;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn.approve {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .action-btn.reject {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.escalate {
+        background-color: #ffc107;
+        color: #333;
+    }
+    
+    .action-btn:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+    }
+    
+    .performance-metrics {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metrics-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .metric-row:last-child {
+        border-bottom: none;
+    }
+    
+    .metric-name {
+        color: #666;
+    }
+    
+    .metric-value-small {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    @media (max-width: 768px) {
+        .moderator-dashboard {
+            padding: 10px;
+        }
+        
+        .dashboard-header {
+            padding: 20px;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2rem;
+        }
+        
+        .moderation-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .queue-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
+        }
+        
+        .report-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 5px;
+        }
+        
+        .report-actions {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="moderator-dashboard">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-shield-alt"></i> Moderator Dashboard</h1>
+        <p>Content moderation analytics and queue management</p>
+    </div>
+    
+    <!-- Moderation Statistics -->
+    <div class="moderation-stats" id="moderationStats">
+        <!-- Stats will be populated by JavaScript -->
+    </div>
+    
+    <div class="row">
+        <!-- Reports Queue -->
+        <div class="col-lg-8">
+            <div class="reports-queue">
+                <div class="queue-header">
+                    <div class="queue-title">Pending Reports Queue</div>
+                    <div class="queue-filters">
+                        <select id="priorityFilter" class="form-control form-control-sm">
+                            <option value="">All Priorities</option>
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                        </select>
+                        <select id="typeFilter" class="form-control form-control-sm">
+                            <option value="">All Types</option>
+                            <option value="spam">Spam</option>
+                            <option value="harassment">Harassment</option>
+                            <option value="misinformation">Misinformation</option>
+                            <option value="inappropriate">Inappropriate</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="reportsQueue">
+                    <!-- Reports will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="col-lg-4">
+            <div class="performance-metrics">
+                <div class="metrics-title">Your Performance</div>
+                <div id="performanceMetrics">
+                    <!-- Metrics will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Moderation Activity Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="reports-queue">
+                <div class="queue-title">Moderation Activity Trends</div>
+                <canvas id="moderationChart" width="400" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+class ModeratorDashboard {
+    constructor() {
+        this.chart = null;
+        this.refreshInterval = null;
+        
+        this.initializeEventListeners();
+        this.loadDashboardData();
+        this.setAutoRefresh();
+    }
+    
+    initializeEventListeners() {
+        // Filter changes
+        document.getElementById('priorityFilter').addEventListener('change', () => {
+            this.loadReportsQueue();
+        });
+        
+        document.getElementById('typeFilter').addEventListener('change', () => {
+            this.loadReportsQueue();
+        });
+    }
+    
+    setAutoRefresh() {
+        // Auto-refresh every 2 minutes
+        this.refreshInterval = setInterval(() => {
+            this.loadDashboardData();
+        }, 120000);
+    }
+    
+    async loadDashboardData() {
+        try {
+            await Promise.all([
+                this.loadModerationStats(),
+                this.loadReportsQueue(),
+                this.loadPerformanceMetrics(),
+                this.loadModerationChart()
+            ]);
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+    
+    async loadModerationStats() {
+        try {
+            const response = await fetch('/analytics/api/summary?days=30');
+            const data = await response.json();
+            
+            const stats = [
+                {
+                    label: 'Pending Reports',
+                    value: data.totals.report_count || 0,
+                    type: 'pending',
+                    icon: 'fas fa-clock'
+                },
+                {
+                    label: 'Actions Taken',
+                    value: data.totals.moderation_action_count || 0,
+                    type: 'resolved',
+                    icon: 'fas fa-check-circle'
+                },
+                {
+                    label: 'Response Time',
+                    value: '2.3h',
+                    type: 'escalated',
+                    icon: 'fas fa-stopwatch'
+                },
+                {
+                    label: 'Accuracy Rate',
+                    value: '94%',
+                    type: 'resolved',
+                    icon: 'fas fa-bullseye'
+                }
+            ];
+            
+            this.updateModerationStats(stats);
+            
+        } catch (error) {
+            console.error('Error loading moderation stats:', error);
+        }
+    }
+    
+    updateModerationStats(stats) {
+        const container = document.getElementById('moderationStats');
+        container.innerHTML = '';
+        
+        stats.forEach(stat => {
+            const card = document.createElement('div');
+            card.className = `stat-card ${stat.type}`;
+            
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">${stat.value}</div>
+                        <div class="stat-label">${stat.label}</div>
+                    </div>
+                    <div class="text-muted">
+                        <i class="${stat.icon}" style="font-size: 2rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+    }
+    
+    async loadReportsQueue() {
+        try {
+            // In a real implementation, this would fetch actual reports
+            const mockReports = [
+                {
+                    id: '1',
+                    type: 'Misinformation',
+                    content: 'Fact contains false information about climate change',
+                    priority: 'high',
+                    time: '2 hours ago',
+                    reporter: 'user123'
+                },
+                {
+                    id: '2',
+                    type: 'Spam',
+                    content: 'Comment appears to be promotional spam',
+                    priority: 'medium',
+                    time: '4 hours ago',
+                    reporter: 'user456'
+                },
+                {
+                    id: '3',
+                    type: 'Harassment',
+                    content: 'User making personal attacks in comments',
+                    priority: 'high',
+                    time: '6 hours ago',
+                    reporter: 'user789'
+                }
+            ];
+            
+            this.updateReportsQueue(mockReports);
+            
+        } catch (error) {
+            console.error('Error loading reports queue:', error);
+        }
+    }
+    
+    updateReportsQueue(reports) {
+        const container = document.getElementById('reportsQueue');
+        container.innerHTML = '';
+        
+        if (!reports || reports.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">No pending reports</p>';
+            return;
+        }
+        
+        reports.forEach(report => {
+            const reportItem = document.createElement('div');
+            reportItem.className = 'report-item';
+            
+            const priorityClass = `priority-${report.priority}`;
+            
+            reportItem.innerHTML = `
+                <div class="report-header">
+                    <div class="report-type">
+                        <span class="priority-indicator ${priorityClass}"></span>
+                        ${report.type}
+                    </div>
+                    <div class="report-time">${report.time}</div>
+                </div>
+                <div class="report-content">${report.content}</div>
+                <div class="report-actions">
+                    <button class="action-btn approve" onclick="moderatorDashboard.handleReport('${report.id}', 'approve')">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="action-btn reject" onclick="moderatorDashboard.handleReport('${report.id}', 'reject')">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button class="action-btn escalate" onclick="moderatorDashboard.handleReport('${report.id}', 'escalate')">
+                        <i class="fas fa-arrow-up"></i> Escalate
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(reportItem);
+        });
+    }
+    
+    async loadPerformanceMetrics() {
+        try {
+            // Mock performance data
+            const metrics = [
+                { name: 'Reports Handled Today', value: '12' },
+                { name: 'Average Response Time', value: '2.3h' },
+                { name: 'Accuracy Rate', value: '94%' },
+                { name: 'Actions This Week', value: '67' },
+                { name: 'Escalation Rate', value: '8%' }
+            ];
+            
+            this.updatePerformanceMetrics(metrics);
+            
+        } catch (error) {
+            console.error('Error loading performance metrics:', error);
+        }
+    }
+    
+    updatePerformanceMetrics(metrics) {
+        const container = document.getElementById('performanceMetrics');
+        container.innerHTML = '';
+        
+        metrics.forEach(metric => {
+            const row = document.createElement('div');
+            row.className = 'metric-row';
+            
+            row.innerHTML = `
+                <div class="metric-name">${metric.name}</div>
+                <div class="metric-value-small">${metric.value}</div>
+            `;
+            
+            container.appendChild(row);
+        });
+    }
+    
+    async loadModerationChart() {
+        try {
+            const response = await fetch('/analytics/api/metrics?days=14&metrics=moderation_action_count,report_count');
+            const data = await response.json();
+            
+            this.updateModerationChart(data.metrics || []);
+            
+        } catch (error) {
+            console.error('Error loading moderation chart:', error);
+        }
+    }
+    
+    updateModerationChart(metrics) {
+        const ctx = document.getElementById('moderationChart').getContext('2d');
+        
+        if (this.chart) {
+            this.chart.destroy();
+        }
+        
+        const dates = [...new Set(metrics.map(m => m.date))].sort();
+        
+        const datasets = [
+            {
+                label: 'Reports Received',
+                data: dates.map(date => {
+                    const metric = metrics.find(m => m.date === date && m.metric_name === 'report_count');
+                    return metric ? metric.count_value : 0;
+                }),
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: 'Actions Taken',
+                data: dates.map(date => {
+                    const metric = metrics.find(m => m.date === date && m.metric_name === 'moderation_action_count');
+                    return metric ? metric.count_value : 0;
+                }),
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }
+        ];
+        
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    async handleReport(reportId, action) {
+        try {
+            // In a real implementation, this would make an API call
+            console.log(`Handling report ${reportId} with action: ${action}`);
+            
+            // Show success message
+            this.showNotification(`Report ${action}d successfully`, 'success');
+            
+            // Reload the queue
+            await this.loadReportsQueue();
+            
+        } catch (error) {
+            console.error('Error handling report:', error);
+            this.showNotification('Error handling report', 'error');
+        }
+    }
+    
+    showNotification(message, type) {
+        // Simple notification - could be enhanced with a proper notification system
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const notification = document.createElement('div');
+        notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+}
+
+// Initialize dashboard when page loads
+let moderatorDashboard;
+document.addEventListener('DOMContentLoaded', () => {
+    moderatorDashboard = new ModeratorDashboard();
+});
+</script>
+{% endblock %}

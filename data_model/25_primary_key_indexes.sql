@@ -1,0 +1,37 @@
+-- Primary Key Indexes
+-- These are automatically created with PRIMARY KEY constraints in most databases
+-- This file documents the primary key indexes for reference
+
+-- Note: Primary key indexes are automatically created when PRIMARY KEY constraints are defined
+-- The following indexes are implicitly created:
+
+-- CREATE INDEX idx_users_pk ON users(id);
+-- CREATE INDEX idx_user_sessions_pk ON user_sessions(id);
+-- CREATE INDEX idx_user_profiles_pk ON user_profiles(id);
+-- CREATE INDEX idx_profile_photos_pk ON profile_photos(id);
+-- CREATE INDEX idx_facts_pk ON facts(id);
+-- CREATE INDEX idx_fact_edit_history_pk ON fact_edit_history(id);
+-- CREATE INDEX idx_hashtags_pk ON hashtags(id);
+-- CREATE INDEX idx_fact_hashtags_pk ON fact_hashtags(id);
+-- CREATE INDEX idx_fact_resources_pk ON fact_resources(id);
+-- CREATE INDEX idx_resource_validation_pk ON resource_validation(id);
+-- CREATE INDEX idx_comments_pk ON comments(id);
+-- CREATE INDEX idx_comment_edit_history_pk ON comment_edit_history(id);
+-- CREATE INDEX idx_comment_threads_pk ON comment_threads(id);
+-- CREATE INDEX idx_fact_votes_pk ON fact_votes(id);
+-- CREATE INDEX idx_comment_votes_pk ON comment_votes(id);
+-- CREATE INDEX idx_vote_statistics_pk ON vote_statistics(id);
+-- CREATE INDEX idx_reports_pk ON reports(id);
+-- CREATE INDEX idx_moderation_actions_pk ON moderation_actions(id);
+-- CREATE INDEX idx_user_moderation_history_pk ON user_moderation_history(id);
+-- CREATE INDEX idx_notifications_pk ON notifications(id);
+-- CREATE INDEX idx_user_notification_preferences_pk ON user_notification_preferences(id);
+-- CREATE INDEX idx_analytics_events_pk ON analytics_events(id);
+-- CREATE INDEX idx_audit_logs_pk ON audit_logs(id);
+-- CREATE INDEX idx_system_configuration_pk ON system_configuration(id);
+
+-- Primary key indexes provide:
+-- 1. Unique constraint enforcement
+-- 2. Fast lookups by primary key
+-- 3. Clustered storage optimization (in some databases)
+-- 4. Foreign key reference performance

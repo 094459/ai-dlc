@@ -1,0 +1,621 @@
+{% extends "admin/dashboard.html" %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+    .integration-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    
+    .integration-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .integration-partial {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .integration-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .component-widget {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+    }
+    
+    .analytics-widget {
+        border-left-color: #667eea;
+    }
+    
+    .moderation-widget {
+        border-left-color: #fd7e14;
+    }
+    
+    .notification-widget {
+        border-left-color: #17a2b8;
+    }
+    
+    .security-widget {
+        border-left-color: #dc3545;
+    }
+    
+    .widget-header {
+        display: flex;
+        justify-content-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .widget-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .widget-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .status-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-item {
+        text-align: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .metric-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .event-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .event-item {
+        padding: 0.5rem;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 0.9rem;
+    }
+    
+    .event-item:last-child {
+        border-bottom: none;
+    }
+    
+    .event-time {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .admin-actions {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .action-button {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<!-- Integration Status -->
+{% if integration_status %}
+<div class="container-fluid mb-3">
+    <div class="integration-status integration-{{ integration_status }}">
+        <i class="fas fa-{% if integration_status == 'success' %}check-circle{% elif integration_status == 'partial' %}exclamation-triangle{% else %}times-circle{% endif %} me-2"></i>
+        Component Integration: 
+        {% if integration_status == 'success' %}
+        All systems connected successfully
+        {% elif integration_status == 'partial' %}
+        Some components unavailable
+        {% else %}
+        Integration error - using fallback data
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Integrated Component Widgets -->
+{% if integrated_data %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Analytics Integration Widget -->
+        {% if integrated_data.analytics %}
+        <div class="col-lg-6 mb-4">
+            <div class="component-widget analytics-widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Analytics Integration
+                    </h5>
+                    <span class="widget-status status-{{ integrated_data.analytics.status }}">
+                        {{ integrated_data.analytics.status|title }}
+                    </span>
+                </div>
+                
+                {% if integrated_data.analytics.status == 'success' %}
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.analytics.metrics.events_last_24h|length|default(0) }}</div>
+                        <div class="metric-label">Events (24h)</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.analytics.metrics.events_last_7d|length|default(0) }}</div>
+                        <div class="metric-label">Events (7d)</div>
+                    </div>
+                </div>
+                
+                {% if integrated_data.analytics.recent_events %}
+                <h6>Recent Events</h6>
+                <div class="event-list">
+                    {% for event in integrated_data.analytics.recent_events[:5] %}
+                    <div class="event-item">
+                        <div>{{ event.event_type|title|replace('_', ' ') }}</div>
+                        <div class="event-time">{{ moment(event.timestamp).fromNow() }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-muted">{{ integrated_data.analytics.error }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Moderation Integration Widget -->
+        {% if integrated_data.moderation %}
+        <div class="col-lg-6 mb-4">
+            <div class="component-widget moderation-widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Moderation Integration
+                    </h5>
+                    <span class="widget-status status-{{ integrated_data.moderation.status }}">
+                        {{ integrated_data.moderation.status|title }}
+                    </span>
+                </div>
+                
+                {% if integrated_data.moderation.status == 'success' %}
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.moderation.metrics.pending_reports|default(0) }}</div>
+                        <div class="metric-label">Pending</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.moderation.metrics.high_priority_reports|default(0) }}</div>
+                        <div class="metric-label">High Priority</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ "%.1f"|format(integrated_data.moderation.metrics.avg_resolution_time|default(0)) }}h</div>
+                        <div class="metric-label">Avg Resolution</div>
+                    </div>
+                </div>
+                
+                {% if integrated_data.moderation.pending_reports %}
+                <h6>High Priority Reports</h6>
+                <div class="event-list">
+                    {% for report in integrated_data.moderation.pending_reports[:3] %}
+                    {% if report.priority == 'high' %}
+                    <div class="event-item">
+                        <div>{{ report.content_type|title }} - {{ report.reason }}</div>
+                        <div class="event-time">{{ moment(report.created_at).fromNow() }} by {{ report.reporter }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-muted">{{ integrated_data.moderation.error }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notifications Integration Widget -->
+        {% if integrated_data.notifications %}
+        <div class="col-lg-6 mb-4">
+            <div class="component-widget notification-widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-bell me-2"></i>
+                        Notifications Integration
+                    </h5>
+                    <span class="widget-status status-{{ integrated_data.notifications.status }}">
+                        {{ integrated_data.notifications.status|title }}
+                    </span>
+                </div>
+                
+                {% if integrated_data.notifications.status == 'success' %}
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.notifications.metrics.unread_notifications|default(0) }}</div>
+                        <div class="metric-label">Unread</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.notifications.queue_status.pending|default(0) }}</div>
+                        <div class="metric-label">Queued</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ "%.1f"|format(integrated_data.notifications.metrics.delivery_rate|default(0)) }}%</div>
+                        <div class="metric-label">Delivery Rate</div>
+                    </div>
+                </div>
+                
+                {% if integrated_data.notifications.recent_notifications %}
+                <h6>Recent System Notifications</h6>
+                <div class="event-list">
+                    {% for notification in integrated_data.notifications.recent_notifications[:3] %}
+                    <div class="event-item">
+                        <div><strong>{{ notification.title }}</strong></div>
+                        <div class="text-muted small">{{ notification.message }}</div>
+                        <div class="event-time">{{ moment(notification.created_at).fromNow() }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-muted">{{ integrated_data.notifications.error }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Security Integration Widget -->
+        {% if integrated_data.security %}
+        <div class="col-lg-6 mb-4">
+            <div class="component-widget security-widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-lock me-2"></i>
+                        Security Integration
+                    </h5>
+                    <span class="widget-status status-{{ integrated_data.security.status }}">
+                        {{ integrated_data.security.status|title }}
+                    </span>
+                </div>
+                
+                {% if integrated_data.security.status == 'success' %}
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-number text-danger">{{ integrated_data.security.metrics.critical_activities|default(0) }}</div>
+                        <div class="metric-label">Critical</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number text-warning">{{ integrated_data.security.metrics.high_severity_activities|default(0) }}</div>
+                        <div class="metric-label">High Severity</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.security.metrics.failed_logins_24h|default(0) }}</div>
+                        <div class="metric-label">Failed Logins</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-number">{{ integrated_data.security.metrics.admin_sessions_active|default(0) }}</div>
+                        <div class="metric-label">Active Admins</div>
+                    </div>
+                </div>
+                
+                {% if integrated_data.security.security_activities %}
+                <h6>Recent Security Activities</h6>
+                <div class="event-list">
+                    {% for activity in integrated_data.security.security_activities[:3] %}
+                    <div class="event-item">
+                        <div>
+                            <span class="badge bg-{{ 'danger' if activity.severity == 'critical' else 'warning' if activity.severity == 'high' else 'secondary' }}">
+                                {{ activity.severity|title }}
+                            </span>
+                            {{ activity.action|title|replace('_', ' ') }}
+                        </div>
+                        <div class="text-muted small">{{ activity.description }}</div>
+                        <div class="event-time">{{ moment(activity.created_at).fromNow() }} by {{ activity.admin }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-muted">{{ integrated_data.security.error }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Admin Actions Panel -->
+    <div class="row">
+        <div class="col-12">
+            <div class="component-widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-tools me-2"></i>
+                        Integrated Admin Actions
+                    </h5>
+                </div>
+                
+                <div class="admin-actions">
+                    <button class="btn btn-primary action-button" onclick="sendAdminNotification()">
+                        <i class="fas fa-bell me-1"></i>
+                        Send Admin Notification
+                    </button>
+                    
+                    <button class="btn btn-warning action-button" onclick="triggerSecurityAlert()">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Trigger Security Alert
+                    </button>
+                    
+                    <button class="btn btn-info action-button" onclick="refreshIntegrationData()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Refresh Integration Data
+                    </button>
+                    
+                    <a href="{{ url_for('moderation.dashboard') }}" class="btn btn-outline-warning action-button">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Moderation Dashboard
+                    </a>
+                    
+                    <a href="{{ url_for('analytics.admin_dashboard') }}" class="btn btn-outline-info action-button">
+                        <i class="fas fa-chart-bar me-1"></i>
+                        Analytics Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modals for Admin Actions -->
+<div class="modal fade" id="adminNotificationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Admin Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adminNotificationForm">
+                    <div class="mb-3">
+                        <label for="notificationTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="notificationTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notificationMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="notificationMessage" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notificationType" class="form-label">Type</label>
+                        <select class="form-select" id="notificationType">
+                            <option value="admin">Admin</option>
+                            <option value="system">System</option>
+                            <option value="security">Security</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notificationPriority" class="form-label">Priority</label>
+                        <select class="form-select" id="notificationPriority">
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSendNotification()">
+                    <i class="fas fa-paper-plane me-1"></i>
+                    Send Notification
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="securityAlertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Trigger Security Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="securityAlertForm">
+                    <div class="mb-3">
+                        <label for="alertType" class="form-label">Alert Type</label>
+                        <select class="form-select" id="alertType" required>
+                            <option value="">Select alert type...</option>
+                            <option value="security_breach">Security Breach</option>
+                            <option value="suspicious_activity">Suspicious Activity</option>
+                            <option value="system_compromise">System Compromise</option>
+                            <option value="data_breach">Data Breach</option>
+                            <option value="unauthorized_access">Unauthorized Access</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="alertDescription" rows="3" required
+                                  placeholder="Describe the security issue..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertSeverity" class="form-label">Severity</label>
+                        <select class="form-select" id="alertSeverity">
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                            <option value="medium">Medium</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmSecurityAlert()">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Trigger Alert
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+function sendAdminNotification() {
+    new bootstrap.Modal(document.getElementById('adminNotificationModal')).show();
+}
+
+function confirmSendNotification() {
+    const title = document.getElementById('notificationTitle').value;
+    const message = document.getElementById('notificationMessage').value;
+    const type = document.getElementById('notificationType').value;
+    const priority = document.getElementById('notificationPriority').value;
+    
+    if (!title || !message) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    fetch('{{ url_for("admin.api_send_admin_notification") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            message: message,
+            type: type,
+            priority: priority
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('adminNotificationModal')).hide();
+        
+        if (data.success) {
+            alert('Notification sent successfully');
+            document.getElementById('adminNotificationForm').reset();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending notification');
+    });
+}
+
+function triggerSecurityAlert() {
+    new bootstrap.Modal(document.getElementById('securityAlertModal')).show();
+}
+
+function confirmSecurityAlert() {
+    const alertType = document.getElementById('alertType').value;
+    const description = document.getElementById('alertDescription').value;
+    const severity = document.getElementById('alertSeverity').value;
+    
+    if (!alertType || !description) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to trigger this security alert? This will notify all administrators.')) {
+        return;
+    }
+    
+    fetch('{{ url_for("admin.api_trigger_security_alert") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            alert_type: alertType,
+            description: description,
+            severity: severity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('securityAlertModal')).hide();
+        
+        if (data.success) {
+            alert('Security alert triggered successfully');
+            document.getElementById('securityAlertForm').reset();
+            // Refresh the page to show the alert
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while triggering security alert');
+    });
+}
+
+function refreshIntegrationData() {
+    const indicator = document.getElementById('refreshIndicator');
+    if (indicator) indicator.classList.add('active');
+    
+    fetch('{{ url_for("admin.api_integrated_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (indicator) indicator.classList.remove('active');
+            // Refresh the page to show updated data
+            location.reload();
+        })
+        .catch(error => {
+            if (indicator) indicator.classList.remove('active');
+            console.error('Error refreshing integration data:', error);
+            alert('Error refreshing integration data');
+        });
+}
+</script>
+{% endblock %}

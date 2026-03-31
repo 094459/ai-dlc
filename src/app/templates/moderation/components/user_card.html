@@ -1,0 +1,166 @@
+<!-- User Card Component -->
+<!-- Usage: {% include 'moderation/components/user_card.html' with context %} -->
+
+<div class="card user-card mb-3" data-user-id="{{ user.id }}">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="user-avatar me-3">
+                        {% if user.profile and user.profile.profile_photo %}
+                            <img src="{{ user.profile.profile_photo.url }}" 
+                                 alt="Profile" class="rounded-circle" width="40" height="40">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="bi bi-person text-white"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <h6 class="mb-1">
+                            {{ user.email }}
+                            {% if user.is_admin %}
+                                <span class="badge bg-danger ms-1">Admin</span>
+                            {% elif user.is_moderator %}
+                                <span class="badge bg-warning ms-1">Moderator</span>
+                            {% endif %}
+                        </h6>
+                        
+                        <div class="user-status">
+                            {% set status = user.get_moderation_status() %}
+                            {% if status == 'banned' %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Banned
+                                </span>
+                            {% elif status == 'suspended' %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-pause-circle"></i> Suspended
+                                </span>
+                            {% elif status == 'restricted' %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-shield-exclamation"></i> Restricted
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Active
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="user-stats">
+                    <small class="text-muted">
+                        <i class="bi bi-exclamation-triangle"></i> {{ user.warning_count }} warnings
+                        {% if user.last_warning_date %}
+                            • Last: {{ user.last_warning_date.strftime('%Y-%m-%d') }}
+                        {% endif %}
+                        
+                        {% if user.suspension_expires %}
+                            <br><i class="bi bi-clock"></i> Suspension expires: {{ user.suspension_expires.strftime('%Y-%m-%d %H:%M') }}
+                        {% endif %}
+                        
+                        {% if user.ban_reason %}
+                            <br><i class="bi bi-info-circle"></i> Ban reason: {{ user.ban_reason[:50] }}...
+                        {% endif %}
+                    </small>
+                </div>
+                
+                {% if show_recent_history and recent_history %}
+                    <div class="recent-history mt-2">
+                        <small class="text-muted">Recent actions:</small>
+                        <ul class="list-unstyled mb-0">
+                            {% for history in recent_history[:3] %}
+                                <li class="small text-muted">
+                                    <i class="bi bi-dot"></i>
+                                    {{ history.action_type.replace('_', ' ').title() }} 
+                                    ({{ history.created_at.strftime('%m/%d') }})
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4 text-end">
+                {% if show_actions %}
+                    {% set action_type = 'user' %}
+                    {% include 'moderation/components/action_buttons.html' %}
+                {% endif %}
+                
+                {% if show_view_button %}
+                    <div class="mt-2">
+                        <a href="/moderation/users/{{ user.id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if user.profile %}
+            <div class="user-profile-info mt-2 pt-2 border-top">
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Name:</strong> 
+                            {{ user.profile.first_name or 'Not provided' }} {{ user.profile.last_name or '' }}
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d') }}
+                        </small>
+                    </div>
+                </div>
+                
+                {% if user.profile.bio %}
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <strong>Bio:</strong> {{ user.profile.bio[:100] }}{% if user.profile.bio|length > 100 %}...{% endif %}
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.user-card {
+    transition: box-shadow 0.2s;
+}
+
+.user-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.user-avatar img {
+    object-fit: cover;
+}
+
+.user-status .badge {
+    font-size: 0.75em;
+}
+
+.user-stats {
+    font-size: 0.85em;
+}
+
+.recent-history {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.recent-history ul {
+    margin-bottom: 0;
+}
+
+.recent-history li {
+    line-height: 1.2;
+}
+</style>

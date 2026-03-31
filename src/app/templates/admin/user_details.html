@@ -1,0 +1,657 @@
+{% extends "base.html" %}
+
+{% block title %}User Details: {{ user_data.user.username }} - Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .user-profile-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .user-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 2.5rem;
+        margin: 0 auto 1rem;
+    }
+    
+    .user-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .status-suspended {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-banned {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .role-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        display: inline-block;
+        margin-left: 1rem;
+    }
+    
+    .role-admin {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .role-moderator {
+        background-color: #fd7e14;
+        color: white;
+    }
+    
+    .role-user {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        height: 100%;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 8px;
+        background: #f8f9fa;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-left: 3px solid #e9ecef;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .activity-item.fact {
+        border-left-color: #28a745;
+    }
+    
+    .activity-item.comment {
+        border-left-color: #17a2b8;
+    }
+    
+    .moderation-item {
+        padding: 1rem;
+        border-left: 3px solid;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .moderation-warning {
+        border-left-color: #ffc107;
+    }
+    
+    .moderation-suspension {
+        border-left-color: #fd7e14;
+    }
+    
+    .moderation-ban {
+        border-left-color: #dc3545;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+    
+    .content-preview {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 5px;
+        border-left: 3px solid #667eea;
+        margin-top: 0.5rem;
+    }
+    
+    .content-preview h6 {
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+    
+    .content-preview p {
+        margin-bottom: 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    User Details: {{ user_data.user.username }}
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">Comprehensive user information and management</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('admin.users') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Back to Users
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- User Profile Card -->
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="user-profile-card text-center">
+                <div class="user-avatar-large">
+                    {{ user_data.user.username[0]|upper }}
+                </div>
+                
+                <h3 class="mb-2">{{ user_data.user.first_name }} {{ user_data.user.last_name }}</h3>
+                <h5 class="text-muted mb-3">@{{ user_data.user.username }}</h5>
+                
+                <div class="mb-3">
+                    <span class="user-status status-{% if user_data.user.is_banned %}banned{% elif user_data.user.is_suspended %}suspended{% elif user_data.user.is_active %}active{% else %}inactive{% endif %}">
+                        {% if user_data.user.is_banned %}Banned{% elif user_data.user.is_suspended %}Suspended{% elif user_data.user.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    <span class="role-badge role-{{ user_data.user.role }}">{{ user_data.user.role|title }}</span>
+                </div>
+                
+                <div class="text-start">
+                    <p><strong>Email:</strong> {{ user_data.user.email }}</p>
+                    <p><strong>Joined:</strong> {{ moment(user_data.user.created_at).format('MMMM DD, YYYY') }}</p>
+                    {% if user_data.user.last_login %}
+                    <p><strong>Last Login:</strong> {{ moment(user_data.user.last_login).fromNow() }}</p>
+                    {% else %}
+                    <p><strong>Last Login:</strong> Never</p>
+                    {% endif %}
+                    <p><strong>Email Verified:</strong> 
+                        {% if user_data.user.email_verified %}
+                        <span class="text-success"><i class="fas fa-check"></i> Yes</span>
+                        {% else %}
+                        <span class="text-warning"><i class="fas fa-times"></i> No</span>
+                        {% endif %}
+                    </p>
+                    {% if user_data.user.suspension_end %}
+                    <p><strong>Suspension Ends:</strong> {{ moment(user_data.user.suspension_end).format('MMMM DD, YYYY HH:mm') }}</p>
+                    {% endif %}
+                    {% if user_data.user.ban_reason %}
+                    <p><strong>Ban Reason:</strong> {{ user_data.user.ban_reason }}</p>
+                    {% endif %}
+                </div>
+                
+                {% if user_data.user.role != 'admin' %}
+                <div class="action-buttons">
+                    {% if user_data.user.is_suspended %}
+                    <button class="btn btn-success" onclick="activateUser()">
+                        <i class="fas fa-play me-1"></i>
+                        Activate User
+                    </button>
+                    {% else %}
+                    <button class="btn btn-warning" onclick="suspendUser()">
+                        <i class="fas fa-pause me-1"></i>
+                        Suspend User
+                    </button>
+                    {% endif %}
+                    
+                    {% if not user_data.user.is_banned %}
+                    <button class="btn btn-danger" onclick="banUser()">
+                        <i class="fas fa-ban me-1"></i>
+                        Ban User
+                    </button>
+                    {% endif %}
+                    
+                    <button class="btn btn-info" onclick="sendMessage()">
+                        <i class="fas fa-envelope me-1"></i>
+                        Send Message
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <!-- User Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_data.statistics.fact_count }}</div>
+                        <div class="stat-label">Facts Created</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_data.statistics.comment_count }}</div>
+                        <div class="stat-label">Comments</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_data.statistics.total_votes_received }}</div>
+                        <div class="stat-label">Votes Received</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_data.statistics.reports_made }}</div>
+                        <div class="stat-label">Reports Made</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs for detailed information -->
+            <ul class="nav nav-tabs" id="userDetailsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                        <i class="fas fa-clock me-1"></i>
+                        Recent Activity
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content" type="button" role="tab">
+                        <i class="fas fa-file-alt me-1"></i>
+                        Content
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="moderation-tab" data-bs-toggle="tab" data-bs-target="#moderation" type="button" role="tab">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Moderation History
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="userDetailsTabContent">
+                <!-- Recent Activity Tab -->
+                <div class="tab-pane fade show active" id="activity" role="tabpanel">
+                    <div class="info-card">
+                        <h5 class="mb-3">Recent Activity</h5>
+                        {% if user_data.recent_activity %}
+                        {% for activity in user_data.recent_activity %}
+                        <div class="activity-item {{ activity.type.split('_')[0] }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>
+                                        {% if activity.type == 'fact_created' %}
+                                        <i class="fas fa-plus-circle text-success me-1"></i>
+                                        Created Fact
+                                        {% elif activity.type == 'comment_created' %}
+                                        <i class="fas fa-comment text-info me-1"></i>
+                                        Posted Comment
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <small class="text-muted">
+                                    {{ moment(activity.created_at).fromNow() }}
+                                </small>
+                            </div>
+                            <div class="mt-2">
+                                {% if activity.type == 'fact_created' %}
+                                <p class="mb-0">{{ activity.title }}</p>
+                                {% elif activity.type == 'comment_created' %}
+                                <p class="mb-0">{{ activity.content }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No recent activity</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Content Tab -->
+                <div class="tab-pane fade" id="content" role="tabpanel">
+                    <div class="info-card">
+                        <h5 class="mb-3">User Content</h5>
+                        
+                        <!-- Recent Facts -->
+                        {% if user_data.content_summary.recent_facts %}
+                        <h6 class="text-primary">Recent Facts</h6>
+                        {% for fact in user_data.content_summary.recent_facts %}
+                        <div class="content-preview">
+                            <h6>{{ fact.title }}</h6>
+                            <p>
+                                Created {{ moment(fact.created_at).fromNow() }} • 
+                                {% if fact.is_published %}Published{% else %}Draft{% endif %}
+                            </p>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Recent Comments -->
+                        {% if user_data.content_summary.recent_comments %}
+                        <h6 class="text-info mt-4">Recent Comments</h6>
+                        {% for comment in user_data.content_summary.recent_comments %}
+                        <div class="content-preview">
+                            <p>{{ comment.content }}</p>
+                            <p class="small text-muted">
+                                Posted {{ moment(comment.created_at).fromNow() }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        
+                        {% if not user_data.content_summary.recent_facts and not user_data.content_summary.recent_comments %}
+                        <p class="text-muted">No content created yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Moderation History Tab -->
+                <div class="tab-pane fade" id="moderation" role="tabpanel">
+                    <div class="info-card">
+                        <h5 class="mb-3">Moderation History</h5>
+                        {% if user_data.moderation_history %}
+                        {% for action in user_data.moderation_history %}
+                        <div class="moderation-item moderation-{{ action.action_type }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>
+                                        {% if action.action_type == 'warning' %}
+                                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                        Warning Issued
+                                        {% elif action.action_type == 'suspension' %}
+                                        <i class="fas fa-pause text-warning me-1"></i>
+                                        User Suspended
+                                        {% elif action.action_type == 'ban' %}
+                                        <i class="fas fa-ban text-danger me-1"></i>
+                                        User Banned
+                                        {% endif %}
+                                    </strong>
+                                    <span class="text-muted">by {{ action.moderator }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    {{ moment(action.created_at).fromNow() }}
+                                </small>
+                            </div>
+                            <div class="mt-2">
+                                <p class="mb-0"><strong>Reason:</strong> {{ action.reason }}</p>
+                                {% if action.expires_at %}
+                                <p class="mb-0 small text-muted">
+                                    Expires: {{ moment(action.expires_at).format('MMMM DD, YYYY HH:mm') }}
+                                </p>
+                                {% endif %}
+                                {% if action.is_active %}
+                                <span class="badge bg-warning">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Expired</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No moderation actions taken</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suspend User Modal -->
+<div class="modal fade" id="suspendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Suspend User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="suspendForm">
+                    <div class="mb-3">
+                        <label for="suspendReason" class="form-label">Reason for suspension</label>
+                        <textarea class="form-control" id="suspendReason" rows="3" required
+                                  placeholder="Enter reason for suspension..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="suspendDuration" class="form-label">Duration</label>
+                        <select class="form-select" id="suspendDuration" required>
+                            <option value="24">24 hours</option>
+                            <option value="72">3 days</option>
+                            <option value="168">1 week</option>
+                            <option value="720">30 days</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="confirmSuspend()">
+                    <i class="fas fa-pause me-1"></i>
+                    Suspend User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ban User Modal -->
+<div class="modal fade" id="banModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ban User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action will permanently ban the user. This cannot be undone.
+                </div>
+                <form id="banForm">
+                    <div class="mb-3">
+                        <label for="banReason" class="form-label">Reason for ban</label>
+                        <textarea class="form-control" id="banReason" rows="3" required
+                                  placeholder="Enter reason for permanent ban..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmBan()">
+                    <i class="fas fa-ban me-1"></i>
+                    Ban User Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+const userId = '{{ user_data.user.id }}';
+const username = '{{ user_data.user.username }}';
+
+function suspendUser() {
+    new bootstrap.Modal(document.getElementById('suspendModal')).show();
+}
+
+function confirmSuspend() {
+    const reason = document.getElementById('suspendReason').value;
+    const duration = document.getElementById('suspendDuration').value;
+    
+    if (!reason.trim()) {
+        alert('Please enter a reason for suspension');
+        return;
+    }
+    
+    fetch('{{ url_for("admin.api_bulk_suspend_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            reason: reason,
+            duration_hours: parseInt(duration)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('suspendModal')).hide();
+        
+        if (data.success) {
+            alert(`Successfully suspended ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while suspending user');
+    });
+}
+
+function activateUser() {
+    if (!confirm(`Are you sure you want to activate ${username}?`)) return;
+    
+    fetch('{{ url_for("admin.api_bulk_update_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            updates: {
+                is_active: true,
+                is_suspended: false
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully activated ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while activating user');
+    });
+}
+
+function banUser() {
+    new bootstrap.Modal(document.getElementById('banModal')).show();
+}
+
+function confirmBan() {
+    const reason = document.getElementById('banReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please enter a reason for the ban');
+        return;
+    }
+    
+    if (!confirm(`Are you absolutely sure you want to permanently ban ${username}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    fetch('{{ url_for("admin.api_bulk_update_users") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_ids: [userId],
+            updates: {
+                is_banned: true,
+                is_active: false,
+                ban_reason: reason
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('banModal')).hide();
+        
+        if (data.success) {
+            alert(`Successfully banned ${username}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while banning user');
+    });
+}
+
+function sendMessage() {
+    // This would integrate with the notification system
+    alert('Message functionality would integrate with the notification system');
+}
+</script>
+{% endblock %}
